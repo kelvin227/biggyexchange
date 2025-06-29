@@ -18,7 +18,6 @@ import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { toast } from "sonner";
 import { useState } from "react";
-import { useMediaQuery } from "usehooks-ts";
 import { Login, SignUp } from "../../../actions/authactions";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -214,18 +213,7 @@ const AuthSkeleton = () => (
     </div>
   </div>
 );
-const SideAuthSkeleton = () => (
-  <div className="flex max-w-xl w-full gap-5 flex-col justify-center bg-linear-[135deg,#f75959_0%,#f35587_100%] p-10 items-center animate-pulse">
-          <div className="w-24 h-24 bg-gray-200 rounded-full" />
-            <div className="w-60 h-10 bg-gray-200 rounded-full" />
-            <div className="w-40 h-8 bg-gray-200 rounded-full" />
-            <div className=" w-24 h-12 bg-gray-200 rounded-full" />
-          </div>
-)
 
-
-const glassBg =
-  "backdrop-blur-lg bg-white/70 border border-white/30 shadow-2xl rounded-3xl";
 
 const AuthForm = () => {
    const [Lang, setLang] = useState('En');
@@ -345,16 +333,8 @@ const AuthForm = () => {
       toast.error(response.message);
     }
   };
-  const isSmallDevice = useMediaQuery("(max-width : 768px)");
 
-  const handleLang =(lang: string) =>{
-    setLang(lang);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('userLanguage', lang);
-      console.log("Language set to:", lang);
-    }
-    router.refresh();
-  }
+
 
   return (
   <div className="min-h-screen w-full flex flex-col lg:flex-row bg-gradient-to-br from-black via-zinc-900 to-yellow-900">
