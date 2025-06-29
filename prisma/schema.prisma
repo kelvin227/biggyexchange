@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  createdAt       DateTime         @default(now())
+  emailVerified   Boolean?
+  emailVerifiedAt DateTime?
+  kycverified     Boolean?         @default(false)
+  kycverifiedAt   DateTime?
+  image           String?          @default("default.png")
+  updatedAt       DateTime         @updatedAt
+  password        String
+  referralCode    String?          @unique
+  referredBy      String?
+  phoneNo         String?
+  name            String?
+  userName        String?          @unique
+  roles           String?          @default("user")
+  isBlocked       Boolean?         @default(false)
+  kyc             Kyc[]
+  Notification    Notification[]
+  userWallet      userWallet[]
+  wallet          wallets[]
+  ads             ads[]
+  adsTransaction  adsTransaction[]
+  traderequest    traderequest[]
+  dispute         dispute[]
+}
+
+model VerificationToken {
+  token   String
+  expires DateTime @default(now())
+  email   String   @unique
+  id      String   @id @default(cuid())
+}
+
+model Kyc {
+  id               String    @id @default(cuid())
+  FullName         String
+  country          String
+  IDNO             String
+  Status           String
+  Rejection_reason String?
+  createdAt        DateTime  @default(now())
+  Reviewed_at      DateTime?
+  documentURL1     String
+  documentURL2     String
+  userid           String    @unique
+
+  user User @relation(fields: [userid], references: [id], onDelete: Cascade)
+}
+
+model userWallet {
+  id             String   @id @default(cuid())
+  walletAddress  String?  @unique
+  walletAddress2 String?  @unique
+  walletAddress3 String?  @unique
+  walletAddress4 String?  @unique
+  walletAddress5 String?  @unique
+  walletAddress6 String?  @unique
+  walletAddress7 String?  @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  userid         String   @unique
+  user           User     @relation(fields: [userid], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  User User @relation(fields: [userId], references: [id])
+}
+
+model wallets {
+  id            String   @id @default(cuid())
+  address       String   @unique
+  private_key   String
+  mnemonic      String
+  network       String
+  created_at    DateTime @default(now())
+  encrypted_key String?
+  userId        String   @unique
+
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ads {
+  id        String   @id @default(cuid())
+  coin      String
+  type      String?
+  price     String
+  status    String
+  proof     String
+  minQty    Int
+  maxQty    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  userName  String
+
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model adsTransaction {
+  id                  String         @id @default(cuid())
+  adId                String
+  orderId             String         @unique
+  coin                String
+  receipt             String
+  type                String?
+  price               String
+  status              String
+  amount              String
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  userId              String
+  walletAddress       String?
+  merchantID          String
+  userName            String
+  merchantconfirm     String         @default("pending")
+  customerconfirm     String         @default("pending")
+  dispute             dispute[]
+  tradeprocess tradeprocess[]
+
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model traderequest {
+  id            String    @id @default(cuid())
+  adId          String
+  coin          String
+  type          String?
+  price         String
+  status        String
+  amount        String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  userId        String
+  merchantId    String
+  walletAddress String?
+  merchantName  String
+  dispute       dispute[]
+
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model dispute {
+  id             String   @id @default(cuid())
+  tradeid        String
+  orderid        String
+  userid         String
+  status         String
+  useremail      String
+  dispute_reason String
+  admin_notes    String?
+  createdAt      DateTime @default(now())
+
+  User     User           @relation(fields: [userid], references: [id], onDelete: Cascade)
+  trade    traderequest   @relation(fields: [tradeid], references: [id], onDelete: Cascade)
+  adstrans adsTransaction @relation(fields: [orderid], references: [orderId], onDelete: Cascade)
+}
+
+model tradeprocess {
+  id               String @id @default(cuid())
+  tradeid          String @unique
+  orderid          String @unique
+  confirmseen      String
+  sendusdt         String
+  checkusdtsent    String
+  sendfeeusdt      String
+  checkusdtfeesent String
+
+  OrderId adsTransaction @relation(fields: [orderid], references: [orderId], onDelete: Cascade)
+}
