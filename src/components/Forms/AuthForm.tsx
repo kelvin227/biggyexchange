@@ -13,19 +13,11 @@ import {
 } from "../ui/form";
 // import { Button } from '../ui/button';
 import { Input } from "../ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { FaChevronDown, FaEarthAmericas } from "react-icons/fa6";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { toast } from "sonner";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { useMediaQuery } from "usehooks-ts";
 import { Login, SignUp } from "../../../actions/authactions";
 import { useRouter } from "next/navigation";
