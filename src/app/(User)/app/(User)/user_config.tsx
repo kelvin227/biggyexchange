@@ -21,7 +21,7 @@ export const NavItems: NavItem[] = [
     position: "top",
   },
   {
-    name: "OTC",
+    name: "Marketplace",
     href: "/otc",
     icon: CoinsIcon,
     position: "top",

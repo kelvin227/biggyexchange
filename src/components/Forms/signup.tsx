@@ -14,12 +14,11 @@ import {
 } from "../ui/form"; // Adjust path as needed
 import { Input } from "../ui/input"; // Adjust path as needed
 import { Button } from "../ui/button"; // Adjust path as needed
-import { Label } from "../ui/label"; // Adjust path as needed
+import { Checkbox } from "../ui/checkbox"; // Adjust path as needed
 import { toast } from "sonner";
-import { Login } from "../../../actions/authactions"; // Adjust path as needed
+import { SignUp } from "../../../actions/authactions"; // Adjust path as needed
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import clsx from "clsx";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
@@ -35,12 +34,12 @@ interface AuthFormDataItem {
   label: string;
 }
 
-// Sign In Form Data
-const signinFieldsEn: AuthFormDataItem[] = [
+// Sign Up Form Data
+const signupFieldsEn: AuthFormDataItem[] = [
   {
     name: "email",
     type: "email",
-    placeHolder: "jondo982@gmail.com",
+    placeHolder: "jondoe1982@gmail.com",
     label: "Email",
   },
   {
@@ -49,12 +48,18 @@ const signinFieldsEn: AuthFormDataItem[] = [
     placeHolder: "*****",
     label: "Password",
   },
+  {
+    name: "referralCode",
+    type: "text",
+    placeHolder: "Enter referral code",
+    label: "Referral Code(optional)",
+  },
 ];
-const signinFieldsFr: AuthFormDataItem[] = [
+const signupFieldsFr: AuthFormDataItem[] = [
   {
     name: "email",
     type: "email",
-    placeHolder: "jondo982@gmail.com",
+    placeHolder: "johndoe24@gmai.com",
     label: "E-mail",
   },
   {
@@ -63,38 +68,64 @@ const signinFieldsFr: AuthFormDataItem[] = [
     placeHolder: "*****",
     label: "Mot de passe",
   },
+  {
+    name: "referralCode",
+    type: "text",
+    placeHolder: "Entrez le code de parrainage",
+    label: "Code de parrainage",
+  },
 ];
-const signinFieldsChi: AuthFormDataItem[] = [
+const signupFieldsChi: AuthFormDataItem[] = [
   {
     name: "email",
     type: "email",
-    placeHolder: "jondo982@gmail.com",
+    placeHolder: "johndoe@gmail.com",
     label: "电子邮件",
   },
   { name: "password", type: "password", placeHolder: "*****", label: "密码" },
+  {
+    name: "referralCode",
+    type: "text",
+    placeHolder: "输入推荐码",
+    label: "推荐码",
+  },
 ];
 
-// Sign In Zod Schema
-const SignInSchema = z.object({
-  email: z.string().email("Invalid email address").trim(),
-  password: z.string(),
+// Sign Up Zod Schema
+const SignUpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  referralCode: z.string(),
+
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .max(32, "Password must not exceed 32 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(
+      /[^A-Za-z0-9]/,
+      "Password must contain at least one special character"
+    ),
+  agreeToTerms: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the terms and conditions",
+  }),
 });
 
-// Sidebar Data
-const sidebarDataSignInPromptEn = {
+const sidebarDataSignUpPromptEn = {
   welcome: "Welcome to BiggyExchange",
-  already: "Don't have an account?",
-  button: "Sign Up",
+  already: "Already have an account?",
+  button: "Sign In",
 };
-const sidebarDataSignInPromptFr = {
+const sidebarDataSignUpPromptFr = {
   welcome: "Bienvenue sur BiggyExchange",
-  already: "Vous avez déjà un compte?",
-  button: "Se connecter",
+  already: "Vous n'avez pas de compte ?",
+  button: "S'inscrire",
 };
-const sidebarDataSignInPromptChi = {
-  welcome: "欢迎来到 BiggyExchange",
-  already: "已经有账户?",
-  button: "登入",
+const sidebarDataSignUpPromptChi = {
+  welcome: "歡迎來到 Socio",
+  already: "沒有賬戶？",
+  button: "報名",
 };
 
 // --- Auth Skeleton Component ---
@@ -148,65 +179,71 @@ const RenderPasswordInput: React.FC<RenderPasswordInputProps> = ({
   );
 };
 
-// --- Sign In Form Component ---
-interface SignInFormComponentProps {
+// --- Sign Up Form Component ---
+interface SignUpFormComponentProps {
   lang: string;
   setIsSubmitting: (isSubmitting: boolean) => void;
   isSubmitting: boolean;
 }
 
-const SignInForm: React.FC<SignInFormComponentProps> = ({
+const SignUpForm: React.FC<SignUpFormComponentProps> = ({
   lang,
   setIsSubmitting,
   isSubmitting,
 }) => {
-  const form = useForm<z.infer<typeof SignInSchema>>({
-    resolver: zodResolver(SignInSchema),
+  const form = useForm<z.infer<typeof SignUpSchema>>({
+    resolver: zodResolver(SignUpSchema),
     defaultValues: {
       email: "",
+      referralCode: "",
       password: "",
+      agreeToTerms: false,
     },
   });
 
   const router = useRouter();
 
-  const currentSigninFields =
+  const currentSignupFields =
     lang === "En"
-      ? signinFieldsEn
+      ? signupFieldsEn
       : lang === "Fr"
-        ? signinFieldsFr
+        ? signupFieldsFr
         : lang === "Chi"
-          ? signinFieldsChi
-          : signinFieldsEn; // Default to English
+          ? signupFieldsChi
+          : signupFieldsEn; // Default to English
 
-  const handleSignIn = async (data: z.infer<typeof SignInSchema>) => {
+  const handleSignUp = async (data: z.infer<typeof SignUpSchema>) => {
     setIsSubmitting(true);
-    const response = await Login(data.email, data.password, "user");
+    const response = await SignUp(data.email, data.password, data.referralCode);
     setIsSubmitting(false);
 
     if (response.success) {
-      toast.success(response.message);
+      toast(response.message, {
+        className: "bg-green-500 text-white",
+      });
       router.replace("/user_dashboard");
     } else {
-      toast.error(response.message);
+      toast(response.message, {
+        className: "bg-red-500 text-white",
+      });
     }
   };
 
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(handleSignIn)}
+        onSubmit={form.handleSubmit(handleSignUp)}
         className="flex flex-col gap-8"
       >
         <h1 className="text-4xl font-bold text-yellow-400 tracking-tight drop-shadow text-center mb-2">
-          {lang === "Fr" ? "Se connecter" : lang === "Chi" ? "登入" : "Sign In"}
+          {lang === "Fr" ? "S'inscrire" : lang === "Chi" ? "報名" : "Sign Up"}
         </h1>
         <div className="flex flex-col gap-6">
-          {currentSigninFields.map((formField) => (
+          {currentSignupFields.map((formField) => (
             <FormField
-              key={`signin-${formField.name}`} // Unique key for sign-in fields
+              key={`signup-${formField.name}`} // Unique key for sign-up fields
               control={form.control}
-              name={formField.name as "email" | "password"} // Type assertion for schema fields
+              name={formField.name} // Directly use formField.name
               render={({ field }: { field: any }) => (
                 <FormItem>
                   <FormLabel className="uppercase text-xs font-semibold text-yellow-300 tracking-wider">
@@ -221,9 +258,9 @@ const SignInForm: React.FC<SignInFormComponentProps> = ({
                     ) : (
                       <Input
                         {...field}
+                        className="rounded-2xl text-lg bg-black/80 border border-yellow-600 text-yellow-100 placeholder-yellow-300 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all p-5 shadow-sm"
                         type={formField.type}
                         placeholder={formField.placeHolder}
-                        className="rounded-2xl text-lg bg-black/80 border border-yellow-600 text-yellow-100 placeholder-yellow-300 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all p-5 shadow-sm"
                       />
                     )}
                   </FormControl>
@@ -232,6 +269,43 @@ const SignInForm: React.FC<SignInFormComponentProps> = ({
               )}
             />
           ))}
+          {/* Terms and Conditions Checkbox */}
+          <FormField
+            control={form.control}
+            name="agreeToTerms"
+            render={({
+              field,
+            }: {
+              field: import("react-hook-form").ControllerRenderProps<
+                z.infer<typeof SignUpSchema>,
+                "agreeToTerms"
+              >;
+            }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md p-0">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="bg-black border-yellow-600"
+                    id="agree"
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel
+                    htmlFor="agree"
+                    className="text-yellow-400 text-sm cursor-pointer"
+                  >
+                    {lang === "Fr"
+                      ? "j'accepte les termes et conditions"
+                      : lang === "Chi"
+                        ? "我同意條款和條件"
+                        : "I agree to the terms and conditions"}
+                  </FormLabel>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
         </div>
         <Button
           size="lg"
@@ -264,28 +338,20 @@ const SignInForm: React.FC<SignInFormComponentProps> = ({
               Loading...
             </span>
           ) : lang === "Fr" ? (
-            "Se connecter"
+            "S'inscrire"
           ) : lang === "Chi" ? (
-            "登入"
+            "報名"
           ) : (
-            "Sign In"
+            "Sign Up"
           )}
         </Button>
-        <Label className="text-yellow-400 text-sm text-right cursor-pointer hover:underline">
-          <Link href={"/reset"}>
-            {lang === "Fr"
-              ? "mot de passe oublié?"
-              : lang === "Chi"
-                ? "忘密码"
-                : "Forgot Password?"}
-          </Link>
-        </Label>
       </form>
     </Form>
   );
 };
+
 // --- Main AuthForm Component ---
-const AuthForm = () => {
+const SignUpPage = () => {
   const [lang, setLang] = useState("En");
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false); // Shared loading state for buttons
@@ -305,23 +371,22 @@ const AuthForm = () => {
   // Determine sidebar content based on current form and language
   const sidebarContent =
     lang === "En"
-      ? sidebarDataSignInPromptEn
+      ? sidebarDataSignUpPromptEn
       : lang === "Fr"
-        ? sidebarDataSignInPromptFr
+        ? sidebarDataSignUpPromptFr
         : lang === "Chi"
-          ? sidebarDataSignInPromptChi
-          : sidebarDataSignInPromptEn; // Default to English
-
+          ? sidebarDataSignUpPromptChi
+          : sidebarDataSignUpPromptEn; // Default to English
   return (
-    <div className=" w-full flex flex-col lg:flex-row bg-gradient-to-br from-black via-zinc-900 to-yellow-900">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-gradient-to-br from-black via-zinc-900 to-yellow-900">
       {/* Left Panel */}
-      <div className="relative flex-1 flex flex-col items-center justify-center mt-40 lg:mt-0 xl:mt-0 bg-gradient-to-br from-black via-zinc-900 to-yellow-900 text-yellow-300 px-8 py-16 lg:rounded-r-[3rem] shadow-2xl">
+      <div className="relative flex-1 flex flex-col items-center justify-center mt-50 lg:mt-0 xl:mt-0 bg-gradient-to-br from-black via-zinc-900 to-yellow-900 text-yellow-300 px-8 py-16 lg:rounded-r-[3rem] shadow-2xl">
         <Image
           alt="Logo"
           src="https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/BiggyExchnage%20Logo-LucbbNrqPh1QVTvE07OudDj4ugPAbQ.png"
           className="mb-6 drop-shadow-lg"
-          width={96}
-          height={96}
+          width={120}
+          height={120}
         />
         <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold drop-shadow text-yellow-400">
@@ -332,7 +397,7 @@ const AuthForm = () => {
             size="lg"
             className="rounded-full bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black border border-yellow-400 font-semibold shadow mt-4 transition"
             variant="outline"
-            onClick={() => router.push("/signUp")}
+            onClick={() => router.push("/auth")}
             disabled={isSubmitting} // Disable toggle button during submission
           >
             {sidebarContent.button}
@@ -351,7 +416,7 @@ const AuthForm = () => {
           {isPageLoading ? (
             <AuthSkeleton />
           ) : (
-            <SignInForm
+            <SignUpForm
               lang={lang}
               setIsSubmitting={setIsSubmitting}
               isSubmitting={isSubmitting}
@@ -363,4 +428,4 @@ const AuthForm = () => {
   );
 };
 
-export default AuthForm;
+export default SignUpPage;

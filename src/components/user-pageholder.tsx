@@ -27,6 +27,7 @@ import {
   IconTrendingUp,
   //IconTrendingDown,
 } from "@tabler/icons-react"
+import { Button } from "./ui/button";
 
 const monthTranslations: Record<string, { En: string; Chi: string }> = {
   January: { En: "January", Chi: "一月" },
@@ -45,7 +46,7 @@ const monthTranslations: Record<string, { En: string; Chi: string }> = {
 
 
   
-export default function PagePlaceholder({ pageName, barchartdata, totalVolume, oldtotalVolume, completedtrans, totaltrans, previouscompletedtrans, previousTotaltrans }: { pageName: string, barchartdata: any[], totalVolume: number, oldtotalVolume: number, completedtrans: number, totaltrans: number, previouscompletedtrans: number, previousTotaltrans: number }) {
+export default function PagePlaceholder({ pageName, barchartdata, totalVolume, oldtotalVolume, completedtrans, totaltrans, previouscompletedtrans, previousTotaltrans, balance }: { pageName: string, barchartdata: any[], totalVolume: number, oldtotalVolume: number, completedtrans: number, totaltrans: number, previouscompletedtrans: number, previousTotaltrans: number,  balance: number }) {
     const [Lang, setLang] = useState('En');
     const [percentchange, setPercentChange] = useState<number>(0);
     // const [previousCompletionPercentage, setPreviousCompletionPercentage] = useState<number>(0); // Remove, calculate dynamically
@@ -63,16 +64,6 @@ export default function PagePlaceholder({ pageName, barchartdata, totalVolume, o
 } satisfies ChartConfig
 
   const cardData = [
-  {
-    title: Lang === "Chi"?"體積":"Volume",
-    description: `${percentchange}%`,
-    content: totalVolume,
-  },
-  {
-    title: Lang === "Chi" ? "效益" :"Earnings",
-    description: "35%",
-    content: "200+",
-  },
   {
     title: Lang === "Chi" ? "已完成的交易" :"Completed trades",
     description: `${completedtranspercent}%`,
@@ -165,6 +156,21 @@ export default function PagePlaceholder({ pageName, barchartdata, totalVolume, o
     return (
     <div className="flex flex-col gap-4 mt-10">
       <h1 className="text-3xl font-bold">{pageName}</h1>
+      <Card>
+              <CardContent className="flex flex-col gap-4">
+                <div className="flex flex-box gap-4 w-full justify-center items-center">
+                  Total Balance
+                </div>
+                <div className="flex flex-box">
+                  <div className="flex flex-col w-full gap-4">
+                    <div className="flex flex-row justify-between items-center">
+                      <div className="text-sm font-medium light:text-gray-700">USD</div>
+                      <div className="text-lg font-bold light:text-gray-900">${balance}</div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+      </Card>
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
         {cardData.map((card, index) => (
           <Card className="w-full" key={index}>

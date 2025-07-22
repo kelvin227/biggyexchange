@@ -18,7 +18,6 @@ const NotiBell = ({tnotifications, tsentYou, tbtcLow,  notification}: {tnotifica
 
     useEffect(() => {
         const interval = setInterval(() => {
-            router.refresh();
         }, 10000); // refresh every 10 seconds
 
         return () => clearInterval(interval);

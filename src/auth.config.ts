@@ -30,12 +30,15 @@ const providers = [
         });
 
         if(!user) {
-            const referredBy = await prisma.user.findUnique({
+            let referredBy;
+            if (credentials?.referralCode){
+            referredBy = await prisma.user.findUnique({
                 where: {referralCode: credentials?.referralCode as string}
             })
             if (!referredBy){
                 return null
             }
+        }
             const newreferralCode = generateReferralCode()
             user = await prisma.user.create({
                 data: {

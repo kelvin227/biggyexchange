@@ -36,7 +36,7 @@ const translations = {
     security: "Security",
     support: "Support",
     logout: "Logout",
-    socio: "Socio",
+    name: "Biggy Exchange",
   },
   Chi: {
     notifications: "通知",
@@ -53,7 +53,7 @@ const translations = {
     security: "安全",
     support: "支持",
     logout: "登出",
-    socio: "Socio",
+    name: "Buggy Exchange",
   },
 };
 
@@ -129,13 +129,13 @@ export default function HeaderCom({ notificationIsRead, img, kyc }: { notificati
           <span className="w-8 h-8 border bg-accent rounded-full">
             <Avatar>
               <AvatarImage
-                src="https://kalajtomdzamxvkl.public.blob.vercel-storage.com/logo2-6X2L1QaE3Zc3GrRsCHvW0JY0kcA7bx.png"
+                src="https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/android-chrome-192x192-gBKKTUt6bYkbJOjBX6mZnCbaSGhriD.png"
                 alt="Socio Logo"
               />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
           </span>
-          <span>{t.socio}</span>
+          <span>{t.name}</span>
         </Link>
       </div>
 

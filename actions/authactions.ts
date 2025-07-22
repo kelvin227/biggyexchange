@@ -53,12 +53,15 @@ export async function SignUp(email:string, password:string, referralCode?: strin
         if (existingUser){
             return {success: false, message: "Email already in use"}
         }
-        const referredBy = await prisma.user.findUnique({
+        if(referralCode){
+                    const referredBy = await prisma.user.findUnique({
             where: {referralCode: referralCode}
         })
         if (!referredBy){
             return {success: false, message: "invalid referral code"}
+        }            
         }
+
         await signIn("credentials", {
             email: email,
             password: password,

@@ -783,7 +783,6 @@ export async function getBalance(address: string) {
 }
 export async function getBnbBalance(address: string) {
   //(address: string) {
-  const usdt = "0x55d398326f99059ff775485246999027b3197955";
   const usdtresponse = await fetch(
     `https://api.etherscan.io/v2/api?chainid=56&module=account&action=balance&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
   );
@@ -794,8 +793,14 @@ export async function getBnbBalance(address: string) {
   //return {success: true, message: balance};
 }
 export async function getPrice() {
-  const url2 = `https://api.coingecko.com/api/v3/simple/price?ids=binance-bridged-usdt-bnb-smart-chain&vs_currencies=usd`;
-  ///const url = 'https://api.coingecko.com/api/v3/coins/binance-bridged-usdt-bnb-smart-chain';
+  const urls = {
+    usdt: `https://api.coingecko.com/api/v3/simple/price?ids=binance-bridged-usdt-bnb-smart-chain&vs_currencies=usd`,
+    eth: `https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd`,
+    btc: `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd`,
+    sol: `https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd`,
+    ton: `https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd`,
+    pi: `https://api.coingecko.com/api/v3/simple/price?ids=pi-network&vs_currencies=usd`,
+  };
   const options = {
     method: "GET",
     headers: {
@@ -805,16 +810,53 @@ export async function getPrice() {
   };
 
   try {
-    const response = await fetch(url2, options);
-    if (!response.ok) {
-      throw new Error("Failed to fetch price from CoinGecko");
+    const [usdtRes, ethRes, btcRes, solRes, tonRes, piRes] = await Promise.all([
+      fetch(urls.usdt, options),
+      fetch(urls.eth, options),
+      fetch(urls.btc, options),
+      fetch(urls.sol, options),
+      fetch(urls.ton, options),
+      fetch(urls.pi, options),
+    ]);
+
+    if (
+      !usdtRes.ok ||
+      !ethRes.ok ||
+      !btcRes.ok ||
+      !solRes.ok ||
+      !tonRes.ok ||
+      !piRes.ok
+    ) {
+      throw new Error("Failed to fetch one or more prices from CoinGecko");
     }
-    const data = await response.json();
-    const price = data["binance-bridged-usdt-bnb-smart-chain"]?.usd;
-    if (typeof price !== "number") {
-      throw new Error("Unexpected response structure from CoinGecko");
-    }
-    return { success: true, message: price };
+
+    const [
+      usdtData,
+      ethData,
+      btcData,
+      solData,
+      tonData,
+      piData,
+    ] = await Promise.all([
+      usdtRes.json(),
+      ethRes.json(),
+      btcRes.json(),
+      solRes.json(),
+      tonRes.json(),
+      piRes.json(),
+    ]);
+
+    return {
+      success: true,
+      prices: {
+        usdt: usdtData["binance-bridged-usdt-bnb-smart-chain"]?.usd ?? null,
+        eth: ethData["ethereum"]?.usd ?? null,
+        btc: btcData["bitcoin"]?.usd ?? null,
+        sol: solData["solana"]?.usd ?? null,
+        ton: tonData["the-open-network"]?.usd ?? null,
+        pi: piData["pi-network"]?.usd ?? null,
+      },
+    };
   } catch (error) {
     console.error("getPrice error:", error);
     return { success: false, message: error };
