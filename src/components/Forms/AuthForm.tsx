@@ -313,7 +313,7 @@ const AuthForm = () => {
           : sidebarDataSignInPromptEn; // Default to English
 
   return (
-    <div className=" w-full flex flex-col lg:flex-row bg-gradient-to-br from-black via-zinc-900 to-yellow-900">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-gradient-to-br from-black via-zinc-900 to-yellow-900">
       {/* Left Panel */}
       <div className="relative flex-1 flex flex-col items-center justify-center mt-40 lg:mt-0 xl:mt-0 bg-gradient-to-br from-black via-zinc-900 to-yellow-900 text-yellow-300 px-8 py-16 lg:rounded-r-[3rem] shadow-2xl">
         <Image
