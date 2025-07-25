@@ -13,7 +13,6 @@ import {
 } from "@/functions/blockchain/wallet.utils";
 import { getPrice } from "@/functions/blockchain/wallet.utils";
 import { useRouter } from "next/navigation";
-import { Bitcoin } from "lucide-react";
 
 // Translation object
 const translations = {
