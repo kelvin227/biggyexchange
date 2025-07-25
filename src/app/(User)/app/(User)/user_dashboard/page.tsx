@@ -241,7 +241,8 @@ export default async function Home() {
   }
 
   const totalVolume = transactions.reduce(
-    (sum: number, transaction: AdsTransaction) => sum + Number(transaction.amount),
+    (sum: number, transaction: AdsTransaction) =>
+      sum + Number(transaction.amount),
     0
   );
 
@@ -251,7 +252,8 @@ export default async function Home() {
   }
 
   const oldtotalVolume = oldtransaction.reduce(
-    (sum: number, oldtransaction: OldTransaction) => sum + Number(oldtransaction.amount),
+    (sum: number, oldtransaction: OldTransaction) =>
+      sum + Number(oldtransaction.amount),
     0
   );
 
@@ -271,9 +273,7 @@ export default async function Home() {
     `https://api.etherscan.io/v2/api?chainid=56&module=account&action=tokenbalance&contractaddress=${usdt}&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
   );
   const usdtdata = await usdtresponse.json();
-  console.log("address:", address);
-  const usdtbalance = ethers.formatUnits(usdtdata.result) // Assuming the API returns the balance in the 'result' field
-  console.log("USDT Balance:", usdtbalance);
+  const usdtbalance = ethers.formatUnits(usdtdata.result); // Assuming the API returns the balance in the 'result' field
   ////////////////
 
   ////BNB balance
@@ -281,25 +281,22 @@ export default async function Home() {
     `https://api.etherscan.io/v2/api?chainid=56&module=account&action=balance&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
   );
   const bnbdata = await bnbresponse.json();
-  console.log("BNB Data:", bnbdata);
   const bnbbalance = ethers.formatEther(bnbdata.result); // Assuming the API returns the balance in the 'result' field
-  console.log("BNB Balance:", bnbbalance);
   ////////////////
 
   /////get bnb price
   const bnbPriceResponse = await getBnbPrice();
   const bnbprice = bnbPriceResponse?.message;
-  console.log("BNB Price:", bnbprice);
   //////////
 
   ////get usdt price
   const usdtPriceResponse = await getPrice();
-  const usdtprice = usdtPriceResponse?.message;
-  console.log("USDT Price:", usdtprice);
+  const usdtprice = usdtPriceResponse?.prices?.usdt as string;
   ///////////
 
-  const totalBalance = (Number(usdtprice) * Number(usdtbalance)) + (Number(bnbprice) * Number(bnbbalance));
-  console.log("Total Balance:", totalBalance);
+  const totalBalance =
+    Number(usdtprice) * Number(usdtbalance) +
+    Number(bnbprice) * Number(bnbbalance);
 
   return (
     <>
@@ -321,8 +318,6 @@ export default async function Home() {
           id={user?.id as string}
         />
       </div>
-        
-      
     </>
   );
 }
