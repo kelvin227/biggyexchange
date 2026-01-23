@@ -771,20 +771,62 @@ export async function checkbalance(
 
 export async function getBalance(address: string) {
   //(address: string) {
-  const usdt = "0x55d398326f99059ff775485246999027b3197955";
-  const usdtresponse = await fetch(
-    `https://api.etherscan.io/v2/api?chainid=56&module=account&action=tokenbalance&contractaddress=${usdt}&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
-  );
-  const data = await usdtresponse.json();
-  const balance = ethers.formatEther(data.result); // Assuming the API returns the balance in the 'result' field
+  const usdtContract = "0x55d398326f99059ff775485246999027b3197955";
+  const url = `https://bsc-mainnet.nodereal.io/v1/${process.env.NODEREAL_API_KEY}`;
 
-  return { success: true, message: balance };
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'nr_getTokenBalance20',
+      params: [usdtContract, address, 'latest'],
+      id: 1,
+    }),
+  });
+
+  const data = await response.json();
+  if (data.result) {
+    // USDT uses 18 decimals on BSC
+    const balance = BigInt(data.result) / BigInt(1e18);
+    return { success: true, message: balance.toString() };
+  }else{
+    throw new Error('Failed to fetch USDT balance');
+  }
+  
   //return {success: true, message: balance};
 }
 export async function getBnbBalance(address: string) {
+  const url = `https://bsc-mainnet.nodereal.io/v1/${process.env.NODEREAL_API_KEY}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getBalance',
+      params: [address, 'latest'],
+      id: 1,
+    }),
+  });
+
+  const data = await response.json();
+  
+  if (data.result) {
+    // Convert hex wei to decimal BNB
+    const wei = BigInt(data.result);
+    const bnbBalance = Number(wei) / 1e18;
+    return { success: true, message: bnbBalance.toFixed(6) };
+  }else{
+    throw new Error('Failed to fetch BNB balance');
+  }
+  
+  //return {success: true, message: balance};
+}
+export async function getEthBalance(address: string) {
   //(address: string) {
   const usdtresponse = await fetch(
-    `https://api.etherscan.io/v2/api?chainid=56&module=account&action=balance&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
+    `https://api.etherscan.io/v2/api?chainid=1&module=account&action=balance&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
   );
   const data = await usdtresponse.json();
   const balance = ethers.formatEther(data.result); // Assuming the API returns the balance in the 'result' field
@@ -798,6 +840,7 @@ export async function getPrice() {
     eth: `https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd`,
     btc: `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd`,
     sol: `https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd`,
+    bnb: `https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd`,
     ton: `https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd`,
     pi: `https://api.coingecko.com/api/v3/simple/price?ids=pi-network&vs_currencies=usd`,
   };
@@ -810,11 +853,12 @@ export async function getPrice() {
   };
 
   try {
-    const [usdtRes, ethRes, btcRes, solRes, tonRes, piRes] = await Promise.all([
+    const [usdtRes, ethRes, btcRes, solRes, bnbRes, tonRes, piRes] = await Promise.all([
       fetch(urls.usdt, options),
       fetch(urls.eth, options),
       fetch(urls.btc, options),
       fetch(urls.sol, options),
+      fetch(urls.bnb, options),
       fetch(urls.ton, options),
       fetch(urls.pi, options),
     ]);
@@ -824,6 +868,7 @@ export async function getPrice() {
       !ethRes.ok ||
       !btcRes.ok ||
       !solRes.ok ||
+      !bnbRes.ok ||
       !tonRes.ok ||
       !piRes.ok
     ) {
@@ -835,6 +880,7 @@ export async function getPrice() {
       ethData,
       btcData,
       solData,
+      bnbData,
       tonData,
       piData,
     ] = await Promise.all([
@@ -842,6 +888,7 @@ export async function getPrice() {
       ethRes.json(),
       btcRes.json(),
       solRes.json(),
+      bnbRes.json(),
       tonRes.json(),
       piRes.json(),
     ]);
@@ -853,6 +900,7 @@ export async function getPrice() {
         eth: ethData["ethereum"]?.usd ?? null,
         btc: btcData["bitcoin"]?.usd ?? null,
         sol: solData["solana"]?.usd ?? null,
+        bnb: bnbData["binancecoin"]?.usd ?? null,
         ton: tonData["the-open-network"]?.usd ?? null,
         pi: piData["pi-network"]?.usd ?? null,
       },
@@ -891,7 +939,7 @@ export async function getBnbPrice() {
 export async function gettransaction(address: string) {
   try {
     const responses = await fetch(
-      `https://api.etherscan.io/v2/api?chainid=56&module=account&action=tokentx&contractaddress=0x55d398326f99059ff775485246999027b3197955&address=${address}&page=0&offset=5&startblock=0&endblock=999999999&sort=desc&apikey=${process.env.ETHER_API_KEY}`
+      `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokentx&contractaddress=0xdAC17F958D2ee523a2206206994597C13D831ec7&address=${address}&page=0&offset=5&startblock=0&endblock=999999999&sort=desc&apikey=${process.env.ETHER_API_KEY}`
     );
 
     return responses.json();
@@ -1020,6 +1068,106 @@ export async function sendusdt(
       errorMessage =
         "Smart contract call failed. Check recipient address and amount.";
     }
+  }
+}
+
+export async function sendEth(
+  amount: string,
+  recipient: string,
+  email: string
+) {
+  if (!amount || Number(amount) <= 0) {
+    throw new Error("Invalid amount provided.");
+  }
+
+  if (!recipient) {
+    throw new Error("Recipient address is required.");
+  }
+  const amountInWei = ethers.parseEther(amount);
+  const hexValue = ethers.toBeHex(amountInWei);
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+  console.log("user from sendtest", user);
+  if (!user) {
+    return { success: false, message: "failed to get user info" };
+  }
+  const wallets = await prisma.wallets.findUnique({
+    where: { userId: user.id },
+    select: { address: true, encrypted_key: true, private_key: true },
+  });
+
+  const provider = new ethers.JsonRpcProvider(
+    `https://mainnet.infura.io/v3${process.env.INFRUA_API_KEY}`
+  );
+  // const decrypt_private_key = await ethers.Wallet.fromEncryptedJson(privateK.private_key, password);
+  const wallet = new ethers.Wallet(wallets?.private_key as string, provider);
+
+  //if (!decrypt_private_key) {
+  //    throw new Error("Invalid password or wallet not found");
+  //}
+
+  // Optional: Check sender's BNB balance for gas fees
+  const senderEthBalance = await getEthBalance(wallets?.address as string);
+  // You might want to estimate gas for the transaction more precisely here.
+  // For a simple transfer, a rough estimate is okay, but it's crucial for users to have enough BNB.
+  const estimatedGasLimit = ethers.formatEther("60000"); // A common estimate for token transfer
+
+  
+  const apiKey = '3320c6924e474dec8a44f475f6bf0bc2'; // Use environment variables for security
+  const url = `https://bsc-mainnet.nodereal.io/v1/${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_estimateGas',
+      params: [{"from": wallets?.address, "to": recipient, "value": hexValue}],
+      id: 1,
+    }),
+  });
+
+  const data = await response.json();
+  
+  if (data.result) {
+    // Convert hex wei to decimal BNB
+    const wei = BigInt(data.result);
+    const estimatedGas = Number(wei) / 1e18;
+
+    const requiredEth = estimatedGas + parseInt(senderEthBalance.message);
+
+    if (parseInt(senderEthBalance.message) < Number(requiredEth)) {
+    return {
+      success: false,
+      message: `Insufficient Eth for gas fees in wallet ${wallets?.address}. Needs approx. ${requiredEth} Ethereum.`,
+    };
+  }
+
+
+    // 4. Send the Transaction
+
+  console.log(
+    `Attempting to transfer ${amount} Eth from ${wallets?.address} to ${recipient}`
+  );
+  if (wallet) {
+    const tx = await wallet.sendTransaction({
+      to: recipient,
+      value: ethers.parseEther(amount),
+      gasLimit: ethers.parseEther(estimatedGasLimit),
+    });
+    console.log("error sending a getting user detials", wallet);
+    console.log("Transaction Hash:", tx.hash);
+    console.log(tx);
+    await tx.wait(); // Wait for the transaction to be mined
+    return { success: true, message: "Eth sent successfully" };
+  }
+  return { success: false, message: wallet };
+
+  }else{
+    throw new Error('Failed to estimate gas');
   }
 }
 

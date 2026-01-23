@@ -4,6 +4,7 @@ import React from "react";
 import { auth } from "@/auth";
 import Wallet from "./wallet-holder";
 import { prisma } from "@/lib/db";
+import { getBalance, getBnbBalance, getEthBalance, getPrice } from "@/functions/blockchain/wallet.utils";
 
 
 export default async function Transaction() {
@@ -23,8 +24,33 @@ export default async function Transaction() {
               select: { address: true},
           });
 
+        const Ethbalance = await getEthBalance(wallet?.address || "");
+
+        const price = await getPrice()
+
+
+        const EthPrice = parseInt(Ethbalance.message) * price.prices?.eth;
+
+        const bnbBalance = await getBnbBalance(wallet?.address || "");
+
+        const BnbPrice = parseFloat(bnbBalance.message) * price.prices?.bnb;
+
+        const usdtbnbBalance = await getBalance( wallet?.address || "");
+
+
+          
+
+
  return (
-<Wallet email={email} address={wallet?.address || "empty"}/>
+<Wallet 
+email={email} 
+address={wallet?.address || "empty"} 
+Ethbalance={Ethbalance.message}
+bnbBalance={bnbBalance.message} 
+EthPrice={EthPrice.toFixed(2)}
+bnbPrice={BnbPrice.toFixed(2)}
+usdtbnbBalance={usdtbnbBalance.message}
+/>
  );
 }
 

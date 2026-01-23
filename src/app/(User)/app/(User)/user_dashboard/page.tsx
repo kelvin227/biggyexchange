@@ -3,11 +3,12 @@ import PagePlaceholder from "@/components/user-pageholder";
 import { TransactionTable } from "../wallet/transaction/trans";
 import { prisma } from "@/lib/db";
 import { ethers } from "ethers";
-import { getBnbPrice, getPrice } from "@/functions/blockchain/wallet.utils";
+import { getBnbPrice, getEthBalance, getPrice } from "@/functions/blockchain/wallet.utils";
 import React from "react";
 /* eslint-disable */
 
 export default async function Home() {
+  var bnbBalance = 1;
   const session = await auth();
   const email = session?.user?.email as string;
 
@@ -264,39 +265,42 @@ export default async function Home() {
   });
 
   const address = coinwallet?.address as string;
-  ///////////////////
 
-  //wallet balance
-  //usdt balance
-  const usdt = "0x55d398326f99059ff775485246999027b3197955";
-  const usdtresponse = await fetch(
-    `https://api.etherscan.io/v2/api?chainid=56&module=account&action=tokenbalance&contractaddress=${usdt}&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
-  );
-  const usdtdata = await usdtresponse.json();
-  const usdtbalance = ethers.formatUnits(usdtdata.result); // Assuming the API returns the balance in the 'result' field
-  ////////////////
+  const ethprice = await getPrice();
 
-  ////BNB balance
-  const bnbresponse = await fetch(
-    `https://api.etherscan.io/v2/api?chainid=56&module=account&action=balance&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
-  );
-  const bnbdata = await bnbresponse.json();
-  const bnbbalance = ethers.formatEther(bnbdata.result); // Assuming the API returns the balance in the 'result' field
-  ////////////////
 
-  /////get bnb price
-  const bnbPriceResponse = await getBnbPrice();
-  const bnbprice = bnbPriceResponse?.message;
-  //////////
+  ////get bnb wallet balance
 
-  ////get usdt price
-  const usdtPriceResponse = await getPrice();
-  const usdtprice = usdtPriceResponse?.prices?.usdt as string;
-  ///////////
+  const apiKey = '3320c6924e474dec8a44f475f6bf0bc2'; // Use environment variables for security
+  const url = `https://bsc-mainnet.nodereal.io/v1/${apiKey}`;
 
-  const totalBalance =
-    Number(usdtprice) * Number(usdtbalance) +
-    Number(bnbprice) * Number(bnbbalance);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_getBalance',
+      params: [address, 'latest'],
+      id: 1,
+    }),
+  });
+
+  const data = await response.json();
+  
+  if (data.result) {
+    // Convert hex wei to decimal BNB
+    const wei = BigInt(data.result);
+    bnbBalance = Number(wei) / 1e18;
+  }else{
+    throw new Error('Failed to fetch BNB balance');
+  }
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  ////get eth wallet balance
+  const ethBalance = await getEthBalance(address);
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+  
 
   return (
     <>
@@ -309,12 +313,12 @@ export default async function Home() {
         totaltrans={totaltrans}
         previouscompletedtrans={previouscompletedtrans}
         previousTotaltrans={previousTotaltrans}
-        balance={totalBalance}
+        balance={parseInt(ethBalance.message) * ethprice.prices?.eth}
       />
       <div className="container mx-auto py-10">
         <TransactionTable
           email={session?.user?.email as string}
-          address={wallet?.address as string}
+          address={address}
           id={user?.id as string}
         />
       </div>

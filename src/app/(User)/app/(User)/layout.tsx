@@ -32,7 +32,7 @@ export default function RootLayout({
                 {/* <AppSidebar navItems={NavItems} />  */}
                 <main className="w-full">
                   <Header />
-                  <div className="ml-5 mt-4 mr-3">
+                  <div className="ml-5 mt-4 mr-3 ">
                     {children}
                     <Toaster richColors />
                   </div>

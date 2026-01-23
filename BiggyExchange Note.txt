@@ -1,0 +1,198 @@
+BiggyExchange Note
+
+Good — since you’re using **Next.js + Prisma + PostgreSQL**, the **cleanest and safest way** to start is:
+
+> ❌ **Do NOT generate BTC keys in your app**
+> ✅ **Create the admin BTC address externally** and **register it in your system**
+
+This is exactly how serious MVPs start.
+
+---
+
+# ✅ Correct Way to “Create” an Admin BTC Address (In Practice)
+
+You **do NOT generate** the address in Next.js.
+
+You **IMPORT / REGISTER** an already-created admin address.
+
+Why?
+
+* Next.js ≠ secure key environment
+* Prisma DB ≠ key vault
+* One mistake = total loss
+
+---
+
+# 🧱 STEP 1 — Create the Admin BTC Address (Outside Your App)
+
+Pick **ONE** of these (recommended order):
+
+## ✅ Option A: Hardware / Trusted Wallet (BEST)
+
+* Ledger
+* Trezor
+* Sparrow Wallet
+* Electrum (offline)
+
+Create a **SegWit (bech32)** address:
+
+```
+bc1qxxxxxxxxxxxxxxxxxxxx
+```
+
+✔ Save private keys OFFLINE
+✔ This wallet signs withdrawals later
+
+---
+
+## ✅ Option B: Bitcoin Core (Server)
+
+```bash
+bitcoin-cli getnewaddress "admin" bech32
+```
+
+Still:
+
+* Private keys stay on the node
+* App never touches keys
+
+---
+
+# 🧱 STEP 2 — Store Admin BTC Address in PostgreSQL (Prisma)
+
+### Prisma schema
+
+```prisma
+model AdminWallet {
+  id        String   @id @default(uuid())
+  asset     String   // "BTC"
+  address   String   @unique
+  network   String   // "mainnet" | "testnet"
+  createdAt DateTime @default(now())
+}
+```
+
+Run:
+
+```bash
+npx prisma migrate dev
+```
+
+---
+
+# 🧱 STEP 3 — Seed the Admin BTC Address (One-Time)
+
+Create a **script**, not UI.
+
+### `prisma/seed.ts`
+
+```ts
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
+
+async function main() {
+  await prisma.adminWallet.create({
+    data: {
+      asset: "BTC",
+      address: "bc1qxxxxxxxxxxxxxxxxxxxx",
+      network: "mainnet",
+    },
+  })
+}
+
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect())
+```
+
+Run:
+
+```bash
+npx prisma db seed
+```
+
+✔ This is your **single source of truth**
+
+---
+
+# 🧱 STEP 4 — Expose Deposit Address to Users (Read-Only API)
+
+### `/app/api/wallets/btc/route.ts`
+
+```ts
+import { prisma } from "@/lib/prisma"
+import { NextResponse } from "next/server"
+
+export async function GET() {
+  const wallet = await prisma.adminWallet.findFirst({
+    where: { asset: "BTC" },
+  })
+
+  if (!wallet) {
+    return NextResponse.json({ error: "BTC wallet not set" }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    address: wallet.address,
+    network: wallet.network,
+  })
+}
+```
+
+Frontend shows:
+
+* Address
+* QR code
+* Warnings
+
+---
+
+# 🧱 STEP 5 — Display Deposit Instructions (UX Safety)
+
+You **must** show:
+
+* BTC network only
+* Minimum deposit
+* Confirmation requirement
+
+Example:
+
+```
+Send only BTC to this address.
+Minimum: 0.0001 BTC
+Deposits credited after 3 confirmations.
+```
+
+---
+
+# 🔐 What You Have Achieved So Far
+
+✅ Zero private keys in app
+✅ No wallet risk
+✅ Prisma-safe
+✅ Easy to audit
+✅ Easy to replace later
+
+---
+
+# 🚫 What NOT to Do (Seriously)
+
+* ❌ Don’t generate BTC keys with JS
+* ❌ Don’t store private keys in env vars
+* ❌ Don’t let users send to random addresses
+* ❌ Don’t reuse Ethereum logic for BTC
+
+---
+
+# 🧭 NEXT STEPS (Choose One)
+
+Now that admin BTC address exists, the **real work** begins:
+
+1️⃣ **Deposit detection** (Blockstream / mempool.space / Bitcoin Core)
+2️⃣ **TXID submission + verification**
+3️⃣ **Confirmations tracking**
+4️⃣ **Admin approval dashboard**
+5️⃣ **Withdrawal request flow (manual)**
+
+Reply with **one number**, and I’ll give you **production-ready Next.js + Prisma code** for that step.

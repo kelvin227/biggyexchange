@@ -130,16 +130,16 @@ export default function HeaderCom({ notificationIsRead, img, kyc }: { notificati
             <Avatar>
               <AvatarImage
                 src="https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/android-chrome-192x192-gBKKTUt6bYkbJOjBX6mZnCbaSGhriD.png"
-                alt="Socio Logo"
+                alt="Biggy Exchange Logo"
               />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
           </span>
-          <span>{t.name}</span>
+          <span className="drop-shadow text-yellow-400">{t.name}</span>
         </Link>
       </div>
 
-      <div className="ml-4 flex items-center gap-3">
+      <div className="ml-4 flex items-center gap-3 drop-shadow text-yellow-400">
         <DropdownMenu>
           <DropdownMenuTrigger className="flex gap-2 items-center">
             <FaEarthAmericas />

@@ -55,11 +55,11 @@ export default function PagePlaceholder({ pageName, barchartdata, totalVolume, o
   const chartConfig = {
   Buy: {
     label: Lang === "Chi" ? "買" :"Buy",
-    color: "#2563eb",
+    color: "#f5b301", // gold
   },
   Sell: {
     label: Lang === "Chi"? "賣":"Sell",
-    color: "#60a5fa",
+    color: "#9f7a0a", // muted gold
   },
 } satisfies ChartConfig
 
@@ -131,7 +131,7 @@ export default function PagePlaceholder({ pageName, barchartdata, totalVolume, o
     if (isCardDataLoading) { // Use the new specific loading state
         return (
             <div className="flex flex-col gap-4 mt-10">
-                <Skeleton className="h-10 w-1/3 mb-4" />
+                <Skeleton className="h-10 w-1/3 mb-4 bg-slate-800/60" />
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     {[1, 2, 3].map((_, idx) => (
                         <Card className="w-full" key={idx}>
@@ -154,9 +154,9 @@ export default function PagePlaceholder({ pageName, barchartdata, totalVolume, o
         );
     } else{
     return (
-    <div className="flex flex-col gap-4 mt-10">
+    <div className="flex flex-col gap-4 mt-10  text-[var(--text-primary)] ">
       <h1 className="text-3xl font-bold">{pageName}</h1>
-      <Card>
+      <Card className="bg-gradient-to-br from-[var(--card-dark)] to-black border border-[var(--gold-soft)] shadow-xl">
               <CardContent className="flex flex-col gap-4">
                 <div className="flex flex-box gap-4 w-full justify-center items-center">
                   Total Balance
@@ -164,8 +164,8 @@ export default function PagePlaceholder({ pageName, barchartdata, totalVolume, o
                 <div className="flex flex-box">
                   <div className="flex flex-col w-full gap-4">
                     <div className="flex flex-row justify-between items-center">
-                      <div className="text-sm font-medium light:text-gray-700">USD</div>
-                      <div className="text-lg font-bold light:text-gray-900">${balance}</div>
+                      <div className="text-sm text-[var(--gold-muted)]">USD</div>
+                      <div className="text-2xl font-bold text-[var(--gold)]">${balance}</div>
                     </div>
                   </div>
                 </div>
@@ -173,12 +173,12 @@ export default function PagePlaceholder({ pageName, barchartdata, totalVolume, o
       </Card>
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
         {cardData.map((card, index) => (
-          <Card className="w-full" key={index}>
+          <Card className="w-full border border-[var(--card-border)] text-[var(--text-primary)] shadow-lg" key={index}>
             <CardHeader>
-              <CardTitle>{card.title}</CardTitle>
-              <CardDescription>{card.description} <IconTrendingUp className="size-4" /></CardDescription>
+              <CardTitle className="text-[var(--text-primary)]">{card.title}</CardTitle>
+              <CardDescription className="flex items-center gap-1 text-[var(--gold)]">{card.description} <IconTrendingUp className="size-4 text-[var(--gold)]" /></CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-xl font-semibold text-[var(--text-secondary)]">
               <p>{card.content}</p>
             </CardContent>
           </Card>
@@ -196,8 +196,8 @@ export default function PagePlaceholder({ pageName, barchartdata, totalVolume, o
     />
     <ChartTooltip content={<ChartTooltipContent />} />
     <ChartLegend content={<ChartLegendContent />} />
-        <Bar dataKey="Buy" fill="var(--color-desktop)" radius={4} />
-        <Bar dataKey="Sell" fill="var(--color-mobile)" radius={4} />
+        <Bar dataKey="Buy" fill="#f5b301" radius={4} />
+        <Bar dataKey="Sell" fill="#9f7a0a" radius={4} />
       </BarChart>
     </ChartContainer>
 

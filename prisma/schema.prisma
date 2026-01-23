@@ -185,3 +185,12 @@ model tradeprocess {
 
   OrderId adsTransaction @relation(fields: [orderid], references: [orderId], onDelete: Cascade)
 }
+
+
+model solanaWallets {
+  id        String   @id @default(uuid())
+  userId    String
+  chain     String   // "SOL"
+  address   String   @unique
+  createdAt DateTime @default(now())
+}
