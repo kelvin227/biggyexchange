@@ -529,7 +529,6 @@ export async function getSolBalance(address: string) {
   }
 }
 
-
 export async function getPrice() {
   const urls = {
     usdt: `https://api.coingecko.com/api/v3/simple/price?ids=binance-bridged-usdt-bnb-smart-chain&vs_currencies=usd`,

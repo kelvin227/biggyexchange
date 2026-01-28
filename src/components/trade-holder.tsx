@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { acceptTrade, Canceltrade, completetrans, confirmbuyer, confirmseen, createdispute } from "@/functions/user";
 import { BadgeCheck, BadgeX, Clock, Loader2 } from "lucide-react";
-import { checkTransactionByHash, checktranStatus } from "@/functions/blockchain/wallet.utils";
-import { PutBlobResult } from "@vercel/blob";
+import { checktranStatus } from "@/functions/blockchain/wallet.utils";
 import { Dialog } from "@radix-ui/react-dialog";
 import { DialogContent, DialogTrigger } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { useRouter } from "next/navigation";
+interface PutBlobResult {
+  url: string;
+}
 
 // Translation object
 const translations = {
@@ -335,21 +337,6 @@ const feepollTx = async (txHash: string) => {
   const handleDisputeSubmit = async () => {
     if (!tradeid) return;
 
-    if(coin === "atok"){
-      try {
-      const response = await checkTransactionByHash(disputeReason, senderwalletaddress, recieverwalletaddress, AmountSent);
-      if(response?.success){
-      
-      setDisputeReason("");
-      toast.success(response.message);
-      }else{
-        toast.error(response?.message || "Failed to submit dispute request.");
-      }
-      
-    } catch (error) {
-      console.error("Error submitting rejection reason:", error);
-    }}else{
-
       const dispute = await createdispute(id, email, tradeid, disputeReason);
 
       if(dispute?.success){
@@ -358,7 +345,6 @@ const feepollTx = async (txHash: string) => {
         toast.error(t.disputeError)
       }
 
-    }
   };
 
   useEffect(() => {
