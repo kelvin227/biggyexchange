@@ -33,6 +33,7 @@ model User {
   adsTransaction  adsTransaction[]
   traderequest    traderequest[]
   dispute         dispute[]
+  solanaWallets   solanaWallets[]
 }
 
 model VerificationToken {
@@ -188,9 +189,14 @@ model tradeprocess {
 
 
 model solanaWallets {
-  id        String   @id @default(uuid())
-  userId    String
-  chain     String   // "SOL"
-  address   String   @unique
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  address       String   @unique
+  private_key   String
+  mnemonic      String
+  network       String
+  created_at    DateTime @default(now())
+  encrypted_key String?
+  userId        String   @unique
+
+  User User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

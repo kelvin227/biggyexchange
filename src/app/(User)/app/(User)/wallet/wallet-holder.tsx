@@ -5,15 +5,12 @@ import { toast } from "sonner";
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import {
-  getBalance,
-  getBnbBalance,
-  getBnbPrice,
   sendEth,
   sendtest,
   sendusdt,
 } from "@/functions/blockchain/wallet.utils";
-import { getPrice } from "@/functions/blockchain/wallet.utils";
 import { useRouter } from "next/navigation";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 // Translation object
 const translations = {
@@ -118,36 +115,45 @@ const translations = {
 export default function Wallet({
   email,
   address,
+  solanaAddress,
   Ethbalance,
   bnbBalance,
   EthPrice,
   bnbPrice,
   usdtbnbBalance,
+  solBalance,
 }: {
   email: string;
   address: string;
+  solanaAddress: string;
   Ethbalance: string;
   bnbBalance: string;
   EthPrice: string;
   bnbPrice: string;
   usdtbnbBalance: string;
+  solBalance: string;
 }) {
   const [Lang, setLang] = useState("En");
   const t = translations[Lang as "En" | "Chi"];
   const router = useRouter();
   const [price, setPrice] = useState<string | null>("");
+  const [password, setPassword] = useState("");
   const [showTransfer, setshowTransfer] = useState(false);
   const walletAddress = address;
+  const [isWallet, isSolanaWallet, isEthWallet] = solanaAddress !== "empty" ? [true, true, true] : [true, false, true];
 
   const [bnbshow, setbnbshow] = useState(false);
   const [bnbtransfer, setbnbtransfer] = useState(false);
   const [show, setshow] = useState(false);
   const [ethShow, setEthShow] = useState(false);
   const [showEthTransfer, setshowEthTransfer] = useState(false);
+  const [showSolTransfer, setshowSolTransfer] = useState(false);
+  const [solShow, setSolShow] = useState(false);
 
   const [recipientAddress, setRecipientAddress] = useState("");
   const [transferAmount, setTransferAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [createSolWalletLoading, setCreateSolWalletLoading] = useState(false);
 
   // USDT Network States
   const [usdtShow, setUsdtShow] = useState(false);
@@ -181,6 +187,32 @@ export default function Wallet({
       warning: "Please ensure you are sending USDT on the Polygon (MATIC) Network. Sending funds on the wrong network may result in loss of funds.",
     },
   };
+
+  async function createSolanaWallet() {
+    setCreateSolWalletLoading(true);
+    if (!password) {
+      toast.error("Please enter your password");
+      setCreateSolWalletLoading(false);
+      return;
+    }
+    const response = await fetch("/api/Solana", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password
+      }),
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      setCreateSolWalletLoading(false);
+      toast.success("Solana wallet created successfully");
+      router.refresh();
+    } else {
+      toast.error(data.message || "Failed to create Solana wallet");
+    }
+  }
 
   // Function to handle the transfer
   const handleTransfer = async (network: string) => {
@@ -839,9 +871,75 @@ export default function Wallet({
 
       {/* Solana Wallet Card */}
       <div className="mt-5">
-        <Card>
+        <Card className="backdrop-blur-lg bg-black/80 border border-yellow-700 shadow-2xl rounded-3xl">
           <CardContent
-            className={show || showTransfer ? "hidden" : "flex flex-col gap-4"}
+            className={isSolanaWallet ? "hidden" : "flex flex-col gap-4"}
+          >
+            <div className="flex flex-box gap-4 w-full justify-center items-center bold">
+              {t.Solana}
+            </div>
+            <div className="flex flex-box justify-center items-center mb-4 mt-2">
+              <div className="flex flex-col w-full gap-4">
+                <div className="flex flex-row justify-center items-center">
+                  <div className="text-sm font-medium light:text-gray-700">
+                    You have not created a solana wallet yet, click the button below to create your solana wallet.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-cols-4 mt-2 w-full gap-4">
+              {/* Solana Creation Button */}
+              <div className={solShow ? "hidden" : "flex flex-col gap-4 w-full"}>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                  variant="outline"
+                  className="rounded-full py-5 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 text-black font-bold text-lg shadow-lg hover:scale-105 transition-transform"
+                >
+                  <div className="flex flex-col justify-between items-center p-4 rounded-lg mb-2 w-full">
+                    <div className="text-sm font-medium light:text-gray-700 w-full text-center cursor-pointer">
+                      Create Solana Wallet
+                    </div>
+                  </div>
+                </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Create Solana Wallet</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <p>
+                            Are you sure you want to create a Solana wallet? A new Solana wallet address will be generated for you.
+                          </p>
+                          <input
+                    type="password"
+                    placeholder={t.enterRecipient}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="flex-grow bg-transparent border outline-none text-sm light:text-gray-900"
+                  />
+                        </div>
+                        <DialogFooter>
+                          <Button
+                          disabled={createSolWalletLoading}
+                            variant="outline"
+                            className="rounded-full py-5 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 text-black font-bold text-lg shadow-lg hover:scale-105 transition-transform w-full"
+                            onClick={() => {
+                              createSolanaWallet();
+                              setSolShow(false);
+                            }}
+                          >
+                            {createSolWalletLoading ? "Loading..." : "Confirm"}
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                
+              </div>
+            </div>
+          </CardContent>
+          <CardContent
+            className={solShow || showSolTransfer || !isSolanaWallet ? "hidden" : "flex flex-col gap-4"}
           >
             <div className="flex flex-box gap-4 w-full justify-center items-center">
               {t.Solana}
@@ -850,7 +948,7 @@ export default function Wallet({
               <div className="flex flex-col w-full gap-4">
                 <div className="flex flex-row justify-between items-center">
                   <div className="text-sm font-medium light:text-gray-700">
-                    {t.totalBalance}
+                    {t.availableBalance}
                   </div>
                   <div className="text-lg font-bold light:text-gray-900">
                     Solana
@@ -858,21 +956,21 @@ export default function Wallet({
                 </div>
                 <div className="flex flex-row justify-between items-center">
                   <div className="text-sm font-medium light:text-gray-700">
-                    {t.availableBalance}
+                    {t.totalBalance}
                   </div>
                   <div className="text-lg font-bold light:text-gray-900">
-                    {price}
+                    {solBalance}
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex flex-cols-4 mt-2 w-full gap-4">
               {/* Deposit Dialog */}
-              <div className={show ? "hidden" : "flex flex-col gap-4 w-full"}>
+              <div className={solShow ? "hidden" : "flex flex-col gap-4 w-full"}>
                 <Button
                   variant="outline"
-                  className=""
-                  onClick={() => setshow(!show)}
+                  className="rounded-full py-5 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 text-black font-bold text-lg shadow-lg hover:scale-105 transition-transform"
+                  onClick={() => setSolShow(!solShow)}
                 >
                   <div className="flex flex-col justify-between items-center p-4 rounded-lg mb-2 w-full">
                     <div className="text-sm font-medium light:text-gray-700 w-full text-center cursor-pointer">
@@ -885,8 +983,8 @@ export default function Wallet({
               <div className={show ? "hidden" : "flex flex-col gap-4 w-full"}>
                 <Button
                   variant="outline"
-                  className=""
-                  onClick={() => setshowTransfer(!showTransfer)}
+                  className="rounded-full py-5 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-600 text-black font-bold text-lg shadow-lg hover:scale-105 transition-transform"
+                  onClick={() => setshowSolTransfer(!showSolTransfer)}
                 >
                   <div className="flex flex-col justify-between items-center p-4 rounded-lg mb-2 w-full">
                     <div className="text-sm font-medium light:text-gray-700 w-full text-center cursor-pointer">
@@ -897,13 +995,15 @@ export default function Wallet({
               </div>
             </div>
           </CardContent>
+
+          {/* sol wallet deposit section */}
           <CardContent
             className={
-              !show ? "flex flex-col gap-4 hidden" : "flex flex-col gap-4"
+              !solShow ? "flex flex-col gap-4 hidden" : "flex flex-col gap-4"
             }
           >
             <div className="flex flex-col gap-4">
-              <h2 className="text-lg font-bold text-center">{t.depositUSDT}</h2>
+              <h2 className="text-lg font-bold text-center">Solana</h2>
               <p className="text-sm light:text-gray-700 text-center">
                 {t.network}: <span className="font-medium">{t.bscBep20}</span>
               </p>
@@ -913,14 +1013,14 @@ export default function Wallet({
                 </p>
                 <div className="flex items-center gap-2 light:bg-gray-100 p-2 rounded-md w-full">
                   <span className="text-sm light:text-gray-900 truncate">
-                    {walletAddress}
+                    {solanaAddress}
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
                     className="ml-auto"
                     onClick={() => {
-                      navigator.clipboard.writeText(walletAddress);
+                      navigator.clipboard.writeText(solanaAddress);
                       toast.success(t.copied);
                     }}
                   >
@@ -934,7 +1034,7 @@ export default function Wallet({
             </div>
           </CardContent>
           <CardContent
-            className={showTransfer ? "flex flex-col gap-4" : "hidden"}
+            className={showSolTransfer ? "flex flex-col gap-4" : "hidden"}
           >
             <div className="flex flex-col gap-4">
               <h2 className="text-lg font-bold text-center">

@@ -2,11 +2,14 @@
 import { prisma } from "@/lib/db";
 import { ethers, formatUnits } from "ethers";
 import { completetrans } from "../user";
+import crypto from "crypto";
+import * as bip39 from "bip39";
+import { Keypair, Connection, PublicKey  } from "@solana/web3.js";
+import { derivePath } from "ed25519-hd-key";
 /* eslint-disable */
 
 const adminWallet = "0xd8c8223d43F6AD2af6D5c6399C6Fc63aF42253B6";
 const usdtcontractaddress = "0x55d398326f99059ff775485246999027b3197955";
-const atokcontractaddress = "0x900650C66c8D317DF5CaCc2Ea0D2F39549bA8632";
 const provider = new ethers.JsonRpcProvider(
   `https://bsc-mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`
 );
@@ -277,399 +280,70 @@ const abi = [
   },
 ];
 
-const atokabi = [
-  { inputs: [], stateMutability: "nonpayable", type: "constructor" },
-  { inputs: [], name: "AccessControlBadConfirmation", type: "error" },
-  {
-    inputs: [
-      { internalType: "address", name: "account", type: "address" },
-      { internalType: "bytes32", name: "neededRole", type: "bytes32" },
-    ],
-    name: "AccessControlUnauthorizedAccount",
-    type: "error",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "spender", type: "address" },
-      { internalType: "uint256", name: "allowance", type: "uint256" },
-      { internalType: "uint256", name: "needed", type: "uint256" },
-    ],
-    name: "ERC20InsufficientAllowance",
-    type: "error",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "sender", type: "address" },
-      { internalType: "uint256", name: "balance", type: "uint256" },
-      { internalType: "uint256", name: "needed", type: "uint256" },
-    ],
-    name: "ERC20InsufficientBalance",
-    type: "error",
-  },
-  {
-    inputs: [{ internalType: "address", name: "approver", type: "address" }],
-    name: "ERC20InvalidApprover",
-    type: "error",
-  },
-  {
-    inputs: [{ internalType: "address", name: "receiver", type: "address" }],
-    name: "ERC20InvalidReceiver",
-    type: "error",
-  },
-  {
-    inputs: [{ internalType: "address", name: "sender", type: "address" }],
-    name: "ERC20InvalidSender",
-    type: "error",
-  },
-  {
-    inputs: [{ internalType: "address", name: "spender", type: "address" }],
-    name: "ERC20InvalidSpender",
-    type: "error",
-  },
-  { inputs: [], name: "EnforcedPause", type: "error" },
-  { inputs: [], name: "ExpectedPause", type: "error" },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "owner",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "spender",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "value",
-        type: "uint256",
-      },
-    ],
-    name: "Approval",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "Paused",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "bytes32", name: "role", type: "bytes32" },
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "previousAdminRole",
-        type: "bytes32",
-      },
-      {
-        indexed: true,
-        internalType: "bytes32",
-        name: "newAdminRole",
-        type: "bytes32",
-      },
-    ],
-    name: "RoleAdminChanged",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "bytes32", name: "role", type: "bytes32" },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "sender",
-        type: "address",
-      },
-    ],
-    name: "RoleGranted",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "bytes32", name: "role", type: "bytes32" },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "sender",
-        type: "address",
-      },
-    ],
-    name: "RoleRevoked",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      { indexed: true, internalType: "address", name: "from", type: "address" },
-      { indexed: true, internalType: "address", name: "to", type: "address" },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "value",
-        type: "uint256",
-      },
-    ],
-    name: "Transfer",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
-      {
-        indexed: false,
-        internalType: "address",
-        name: "account",
-        type: "address",
-      },
-    ],
-    name: "Unpaused",
-    type: "event",
-  },
-  {
-    inputs: [],
-    name: "DEFAULT_ADMIN_ROLE",
-    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "MODERATOR_ROLE",
-    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "PAUSER_ROLE",
-    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "owner", type: "address" },
-      { internalType: "address", name: "spender", type: "address" },
-    ],
-    name: "allowance",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "spender", type: "address" },
-      { internalType: "uint256", name: "value", type: "uint256" },
-    ],
-    name: "approve",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "account", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "", type: "address" }],
-    name: "blackListWallet",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "value", type: "uint256" }],
-    name: "burn",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "account", type: "address" },
-      { internalType: "uint256", name: "value", type: "uint256" },
-    ],
-    name: "burnFrom",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "_tokenAddress", type: "address" },
-    ],
-    name: "clearUnknownToken",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "decimals",
-    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "bytes32", name: "role", type: "bytes32" }],
-    name: "getRoleAdmin",
-    outputs: [{ internalType: "bytes32", name: "", type: "bytes32" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "bytes32", name: "role", type: "bytes32" },
-      { internalType: "address", name: "account", type: "address" },
-    ],
-    name: "grantRole",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "bytes32", name: "role", type: "bytes32" },
-      { internalType: "address", name: "account", type: "address" },
-    ],
-    name: "hasRole",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "name",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "pause",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "paused",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "bytes32", name: "role", type: "bytes32" },
-      { internalType: "address", name: "callerConfirmation", type: "address" },
-    ],
-    name: "renounceRole",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "bytes32", name: "role", type: "bytes32" },
-      { internalType: "address", name: "account", type: "address" },
-    ],
-    name: "revokeRole",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address[]", name: "_address", type: "address[]" },
-      { internalType: "bool", name: "result", type: "bool" },
-    ],
-    name: "setBlackListWallet",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "bytes4", name: "interfaceId", type: "bytes4" }],
-    name: "supportsInterface",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "symbol",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "totalSupply",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "to", type: "address" },
-      { internalType: "uint256", name: "value", type: "uint256" },
-    ],
-    name: "transfer",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "from", type: "address" },
-      { internalType: "address", name: "to", type: "address" },
-      { internalType: "uint256", name: "value", type: "uint256" },
-    ],
-    name: "transferFrom",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "unpause",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-];
+// simple AES encryption helper
+function encrypt(text: string, password: string) {
+  const iv = crypto.randomBytes(16);
+  const key = crypto.scryptSync(password, "salt", 32);
+  const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
+
+  const encrypted =
+    cipher.update(text, "utf8", "hex") + cipher.final("hex");
+
+  return iv.toString("hex") + ":" + encrypted;
+}
+
+export async function createSolanaWallet(
+  password: string,
+  email: string,
+  index = 0
+) {
+  // 1. Find user
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  // 2. Generate Solana mnemonic
+  const mnemonic = bip39.generateMnemonic(256);
+
+  // 3. Derive seed
+  const seed = bip39.mnemonicToSeedSync(mnemonic);
+
+  // 4. Solana derivation path
+  const path = `m/44'/501'/${index}'/0'`;
+  const derived = derivePath(path, seed.toString("hex"));
+
+  // 5. Create Solana keypair
+  const keypair = Keypair.fromSeed(derived.key.slice(0, 32));
+
+  const publicKey = keypair.publicKey.toBase58();
+  const secretKey = Buffer.from(keypair.secretKey).toString("hex");
+
+  // 6. Encrypt sensitive data
+  const encryptedSecretKey = encrypt(secretKey, password);
+  const encryptedMnemonic = encrypt(mnemonic, password);
+
+  // 7. Store in DB
+  const wallet = await prisma.solanaWallets.create({
+    data: {
+      address: publicKey,
+      encrypted_key: encryptedSecretKey,
+      mnemonic: encryptedMnemonic,
+      network: "SOLANA",
+      userId: user.id,
+      private_key: encryptedSecretKey,
+    },
+  });
+
+  return {
+    id: wallet.id,
+    address: publicKey,
+  };
+}
+
+
 
 export async function createWallet(password: string, email: string) {
   const getuser = await prisma.user.findUnique({
@@ -694,6 +368,9 @@ export async function createWallet(password: string, email: string) {
       userId,
     },
   });
+  if (newWallet){
+
+  }
   return newWallet;
 }
 
@@ -834,6 +511,25 @@ export async function getEthBalance(address: string) {
   return { success: true, message: balance };
   //return {success: true, message: balance};
 }
+export async function getSolBalance(address: string) {
+  try {
+    const connection = new Connection(
+      "https://api.mainnet-beta.solana.com",
+      "confirmed"
+    );
+
+    const pubKey = new PublicKey(address);
+
+    const balanceLamports = await connection.getBalance(pubKey);
+    const balanceSOL = balanceLamports / 1e9;
+
+    return Number(balanceSOL.toFixed(6));
+  } catch (err) {
+    throw new Error("Invalid Solana address or RPC error");
+  }
+}
+
+
 export async function getPrice() {
   const urls = {
     usdt: `https://api.coingecko.com/api/v3/simple/price?ids=binance-bridged-usdt-bnb-smart-chain&vs_currencies=usd`,
@@ -1570,127 +1266,127 @@ export async function sendusdttrade(
 //   }
 // }
 
-export async function checkTransactionByHash(
-  txHash: string,
-  expectedSender: string,
-  expectedRecipient: string,
-  expectedAmount: string,
-  minConfirmations: number = 6 // Common standard for reasonable finality
-) {
-  try {
-    const provider = new ethers.JsonRpcProvider(
-      `https://bsc-mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`
-    );
-    const atokContract: ethers.Contract = new ethers.Contract(
-      atokcontractaddress,
-      atokabi,
-      provider
-    );
+// export async function checkTransactionByHash(
+//   txHash: string,
+//   expectedSender: string,
+//   expectedRecipient: string,
+//   expectedAmount: string,
+//   minConfirmations: number = 6 // Common standard for reasonable finality
+// ) {
+//   try {
+//     const provider = new ethers.JsonRpcProvider(
+//       `https://bsc-mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`
+//     );
+//     const atokContract: ethers.Contract = new ethers.Contract(
+//       atokcontractaddress,
+//       atokabi,
+//       provider
+//     );
 
-    if (!ethers.isHexString(txHash, 32)) {
-      return { success: false, message: "Invalid transaction hash format." };
-    }
+//     if (!ethers.isHexString(txHash, 32)) {
+//       return { success: false, message: "Invalid transaction hash format." };
+//     }
 
-    console.log(`Checking transaction hash: ${txHash}`);
+//     console.log(`Checking transaction hash: ${txHash}`);
 
-    // Get transaction receipt
-    const receipt = await provider.getTransactionReceipt(txHash);
+//     // Get transaction receipt
+//     const receipt = await provider.getTransactionReceipt(txHash);
 
-    if (!receipt) {
-      return {
-        success: false,
-        message: "Transaction not found or not yet mined.",
-      };
-    }
+//     if (!receipt) {
+//       return {
+//         success: false,
+//         message: "Transaction not found or not yet mined.",
+//       };
+//     }
 
-    if (receipt.status === 0) {
-      return {
-        success: false,
-        message: "Transaction failed on-chain (status 0).",
-      };
-    }
+//     if (receipt.status === 0) {
+//       return {
+//         success: false,
+//         message: "Transaction failed on-chain (status 0).",
+//       };
+//     }
 
-    // Get current block number to calculate confirmations
-    const currentBlock = await provider.getBlockNumber();
-    const confirmations = currentBlock - receipt.blockNumber + 1;
+//     // Get current block number to calculate confirmations
+//     const currentBlock = await provider.getBlockNumber();
+//     const confirmations = currentBlock - receipt.blockNumber + 1;
 
-    if (confirmations < minConfirmations) {
-      return {
-        success: false,
-        message: `Transaction found, but only has ${confirmations} confirmations (needs ${minConfirmations}).`,
-      };
-    }
+//     if (confirmations < minConfirmations) {
+//       return {
+//         success: false,
+//         message: `Transaction found, but only has ${confirmations} confirmations (needs ${minConfirmations}).`,
+//       };
+//     }
 
-    // Dynamically get decimals from the contract
-    const decimals = 18;
-    const expectedAmountWei = ethers.parseUnits(expectedAmount, decimals);
+//     // Dynamically get decimals from the contract
+//     const decimals = 18;
+//     const expectedAmountWei = ethers.parseUnits(expectedAmount, decimals);
 
-    // Filter for the specific Transfer event in the transaction logs
-    let foundTransfer = false;
-    for (const log of receipt.logs) {
-      // Check if the log is from our USDT contract
-      if (
-        ethers.getAddress(log.address) ===
-        ethers.getAddress(atokcontractaddress)
-      ) {
-        try {
-          // Decode the log using the ERC20 ABI
-          const parsedLog = atokContract.interface.parseLog(log);
+//     // Filter for the specific Transfer event in the transaction logs
+//     let foundTransfer = false;
+//     for (const log of receipt.logs) {
+//       // Check if the log is from our USDT contract
+//       if (
+//         ethers.getAddress(log.address) ===
+//         ethers.getAddress(atokcontractaddress)
+//       ) {
+//         try {
+//           // Decode the log using the ERC20 ABI
+//           const parsedLog = atokContract.interface.parseLog(log);
 
-          if (parsedLog && parsedLog.name === "Transfer") {
-            const from = parsedLog.args.from;
-            const to = parsedLog.args.to;
-            const value = parsedLog.args.value;
+//           if (parsedLog && parsedLog.name === "Transfer") {
+//             const from = parsedLog.args.from;
+//             const to = parsedLog.args.to;
+//             const value = parsedLog.args.value;
 
-            // Compare addresses (case-insensitive) and value
-            if (
-              (console.log("this is the from address", from),
-              console.log("this is the to address", to),
-              console.log("this is the value", value),
-              ethers.getAddress(from) === ethers.getAddress(expectedSender) &&
-                ethers.getAddress(to) ===
-                  ethers.getAddress(expectedRecipient) &&
-                value.eq(expectedAmountWei)) // BigNumber comparison
-            ) {
-              foundTransfer = true;
-              break; // Found the matching transfer event
-            }
-          }
-        } catch (decodeError: any) {
-          // This log might not be an ERC20 Transfer event, ignore it
-          console.warn(`Could not parse log: ${decodeError.message}`);
-        }
-      }
-    }
+//             // Compare addresses (case-insensitive) and value
+//             if (
+//               (console.log("this is the from address", from),
+//               console.log("this is the to address", to),
+//               console.log("this is the value", value),
+//               ethers.getAddress(from) === ethers.getAddress(expectedSender) &&
+//                 ethers.getAddress(to) ===
+//                   ethers.getAddress(expectedRecipient) &&
+//                 value.eq(expectedAmountWei)) // BigNumber comparison
+//             ) {
+//               foundTransfer = true;
+//               break; // Found the matching transfer event
+//             }
+//           }
+//         } catch (decodeError: any) {
+//           // This log might not be an ERC20 Transfer event, ignore it
+//           console.warn(`Could not parse log: ${decodeError.message}`);
+//         }
+//       }
+//     }
 
-    if (foundTransfer) {
-      return {
-        success: true,
-        message: "USDT transfer confirmed successfully!",
-        transactionHash: txHash,
-        blockNumber: receipt.blockNumber,
-        confirmations: confirmations,
-        sender: expectedSender,
-        recipient: expectedRecipient,
-        amount: expectedAmount,
-      };
-    } else {
-      return {
-        success: false,
-        message:
-          "Transaction found, but no matching USDT transfer event was detected. " +
-          ethers.getAddress(expectedSender) +
-          "reciepieint:" +
-          ethers.getAddress(expectedRecipient) +
-          " and amount: " +
-          expectedAmount,
-      };
-    }
-  } catch (error: any) {
-    console.error("Error checking transaction by hash:", error);
-    return { success: false, message: `An error occurred: ${error.message}` };
-  }
-}
+//     if (foundTransfer) {
+//       return {
+//         success: true,
+//         message: "USDT transfer confirmed successfully!",
+//         transactionHash: txHash,
+//         blockNumber: receipt.blockNumber,
+//         confirmations: confirmations,
+//         sender: expectedSender,
+//         recipient: expectedRecipient,
+//         amount: expectedAmount,
+//       };
+//     } else {
+//       return {
+//         success: false,
+//         message:
+//           "Transaction found, but no matching USDT transfer event was detected. " +
+//           ethers.getAddress(expectedSender) +
+//           "reciepieint:" +
+//           ethers.getAddress(expectedRecipient) +
+//           " and amount: " +
+//           expectedAmount,
+//       };
+//     }
+//   } catch (error: any) {
+//     console.error("Error checking transaction by hash:", error);
+//     return { success: false, message: `An error occurred: ${error.message}` };
+//   }
+// }
 
 export async function checktranStatus(
   hash: string,

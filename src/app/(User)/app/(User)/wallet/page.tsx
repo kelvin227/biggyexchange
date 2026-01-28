@@ -4,7 +4,7 @@ import React from "react";
 import { auth } from "@/auth";
 import Wallet from "./wallet-holder";
 import { prisma } from "@/lib/db";
-import { getBalance, getBnbBalance, getEthBalance, getPrice } from "@/functions/blockchain/wallet.utils";
+import { getBalance, getBnbBalance, getEthBalance, getPrice, getSolBalance } from "@/functions/blockchain/wallet.utils";
 
 
 export default async function Transaction() {
@@ -23,6 +23,13 @@ export default async function Transaction() {
               where: { userId: user?.id },
               select: { address: true},
           });
+          const solanaWallet = await prisma.solanaWallets.findUnique({
+              where: { userId: user?.id },
+              select: { address: true},
+          });
+          if (solanaWallet === null){
+            console.log("no solana wallet")
+          }
 
         const Ethbalance = await getEthBalance(wallet?.address || "");
 
@@ -36,20 +43,21 @@ export default async function Transaction() {
         const BnbPrice = parseFloat(bnbBalance.message) * price.prices?.bnb;
 
         const usdtbnbBalance = await getBalance( wallet?.address || "");
-
-
-          
+        
+        const solBalance =  await getSolBalance(solanaWallet?.address || "");
 
 
  return (
 <Wallet 
 email={email} 
 address={wallet?.address || "empty"} 
+solanaAddress={solanaWallet?.address || "empty"}
 Ethbalance={Ethbalance.message}
 bnbBalance={bnbBalance.message} 
 EthPrice={EthPrice.toFixed(2)}
 bnbPrice={BnbPrice.toFixed(2)}
 usdtbnbBalance={usdtbnbBalance.message}
+solBalance={solBalance.toString()}
 />
  );
 }

@@ -69,7 +69,11 @@ export async function SignUp(email:string, password:string, referralCode?: strin
             redirect: false
         })
         const wallet = await createWallet(password, email);
+        const createSolanaWallet = await createWallet(password, email);
     if (!wallet) {
+        return {success: false, message: "Failed to create a wallet"}
+    }
+    if (!createSolanaWallet) {
         return {success: false, message: "Failed to create a wallet"}
     }
         return {success: true, message: "User created successfully"}
