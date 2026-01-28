@@ -1,6 +1,8 @@
 "use client"
-import type { PutBlobResult } from '@vercel/blob';
 import React, { useState, useRef, useEffect } from "react";
+interface PutBlobResult {
+  url: string;
+}
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
