@@ -136,11 +136,11 @@ export default function Wallet({
   const [Lang, setLang] = useState("En");
   const t = translations[Lang as "En" | "Chi"];
   const router = useRouter();
-  const [price, setPrice] = useState<string | null>("");
+  const price = '$0.00';
   const [password, setPassword] = useState("");
   const [showTransfer, setshowTransfer] = useState(false);
   const walletAddress = address;
-  const [isWallet, isSolanaWallet, isEthWallet] = solanaAddress !== "empty" ? [true, true, true] : [true, false, true];
+  const isSolanaWallet = solanaAddress !== "empty" ? true : false;
 
   const [bnbshow, setbnbshow] = useState(false);
   const [bnbtransfer, setbnbtransfer] = useState(false);

@@ -2,8 +2,7 @@ import { auth } from "@/auth";
 import PagePlaceholder from "@/components/user-pageholder";
 import { TransactionTable } from "../wallet/transaction/trans";
 import { prisma } from "@/lib/db";
-import { ethers } from "ethers";
-import { getBnbPrice, getEthBalance, getPrice } from "@/functions/blockchain/wallet.utils";
+import { getEthBalance, getPrice } from "@/functions/blockchain/wallet.utils";
 import React from "react";
 /* eslint-disable */
 
