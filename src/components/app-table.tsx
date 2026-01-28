@@ -1,5 +1,5 @@
-import { Payment, columns } from "@/app/(User)/app/(User)/wallet/columns";
-import { DataTable } from "@/app/(User)/app/(User)/user_dashboard/data-table";
+import { Payment, columns } from "@/app/(User)/user/(User)/wallet/columns";
+import { DataTable } from "@/app/(User)/user/(User)/user_dashboard/data-table";
  
 async function getData(): Promise<Payment[]> {
   // Fetch data from your API here.

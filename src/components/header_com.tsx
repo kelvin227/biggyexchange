@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Menu, Wallet, BadgeCheck } from "lucide-react";
-import { NavItems, NavItemsChi } from "@/app/(User)/app/(User)/user_config";
+import { NavItems, NavItemsChi } from "@/app/(User)/user/(User)/user_config";
 import { LogOut } from "../../actions/authactions";
 import { FaEarthAmericas } from "react-icons/fa6";
 import NotiBell from "./NotiBell";
