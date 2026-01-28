@@ -31,7 +31,7 @@ export default function middleware(req: any) {
         case "biggyexchange":
         //case "app":
         return NextResponse.rewrite(
-        new URL(`/admin${req.nextUrl.pathname}`, req.url)
+        new URL(`/user${req.nextUrl.pathname}`, req.url)
         );
 
             /// chnage the case back to admin or web when he has bought a domain
