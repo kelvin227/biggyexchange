@@ -11,9 +11,6 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!request.body) {
     throw new Error('Request body is required');
   }
-  const blob = await put(filename, request.body, {
-    access: 'public',
-    addRandomSuffix: true,
-  });
+  const blob = await put(filename, request.body);
   return NextResponse.json(blob);
 }
