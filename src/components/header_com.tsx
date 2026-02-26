@@ -210,10 +210,6 @@ export default function HeaderCom({
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex flex-cols-4 mt-2 w-full gap-4">
-          {/* Solana Creation Button */}
-          <div
-            className={profileMenu ? "hidden" : "flex flex-col gap-4 w-full"}
-          >
             <Dialog>
               <DialogTrigger                   
                   className="overflow-hidden rounded-full">
@@ -228,7 +224,7 @@ export default function HeaderCom({
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
               </DialogTrigger>
-              <DialogContent className="max-w-[400px] sm:max-w-[400px]">
+              <DialogContent className="max-w-[400px] sm:max-w-[400px] flex flex-col gap-4 w-full">
                 <DialogHeader>
                   <DialogTitle>My Account</DialogTitle>
                   <DropdownMenuSeparator />
@@ -263,7 +259,6 @@ export default function HeaderCom({
 
               </DialogContent>
             </Dialog>
-          </div>
         </div>
       </div>
     </header>
