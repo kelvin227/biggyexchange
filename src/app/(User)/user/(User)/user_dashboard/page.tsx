@@ -150,7 +150,7 @@ export default async function Home() {
     },
   });
   if (!transactions) {
-    return { success: false, message: "No transactions found for the user" };
+    throw new Error('Failed to fetch recent transactions');
   }
   const oldtransaction = await prisma.adsTransaction.findMany({
     where: {
@@ -166,10 +166,7 @@ export default async function Home() {
     },
   });
   if (!oldtransaction) {
-    return {
-      success: false,
-      message: "No old transactions found for the user",
-    };
+      throw new Error('Failed to fetch old transactions');
   }
   const completedtrans = await prisma.adsTransaction.count({
     where: {
