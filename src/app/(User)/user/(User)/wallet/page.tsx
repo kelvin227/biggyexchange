@@ -74,7 +74,7 @@ bnbPrice={BnbPrice.toFixed(2)}
 usdtbnbBalance={usdtbnbBalance.message}
 solBalance={solBalance.toString() ?? "0"}
 solTestNetBalance={solTestNetBalance.toString() ?? "0"}
-solPrice={price.prices?.sol.toFixed(2) || "0"}
+solPrice={solPrice.toFixed(2) || "0"}
 soltestnetPrice={soltestnetPrice.toFixed(2) || "0"}
 />
  );

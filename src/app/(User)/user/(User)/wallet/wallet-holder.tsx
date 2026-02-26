@@ -1218,7 +1218,7 @@ export default function Wallet({
                     {t.availableBalance}
                   </div>
                   <div className="text-lg font-bold light:text-gray-900">
-                    Solana
+                    {solPrice}
                   </div>
                 </div>
                 <div className="flex flex-row justify-between items-center">

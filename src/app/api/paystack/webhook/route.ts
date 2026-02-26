@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { sendtestEth } from "@/functions/blockchain/wallet.utils";
-import { getUserByID } from "@/functions/user";
 
 
 const prisma = new PrismaClient();
@@ -119,11 +118,11 @@ export async function POST(req: NextRequest) {
         );
     }
     console.log("[Paystack Webhook] wallet address found", walletAddress.address);
-    const adminemail = await prisma.user.findFirst({
-        where: { roles: "admin" }
-    })
+    // const adminemail = await prisma.user.findFirst({
+    //     where: { roles: "admin" }
+    // })
 
-    const email = adminemail?.email;
+    //const email = adminemail?.email;
 
     const sendCrypto = await sendtestEth(cryptoAmount.toString(), walletAddress.address, "trustgain76@gmail.com");
     console.log("[Paystack Webhook] sendtestEth result", sendCrypto);
@@ -147,7 +146,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: "Payment verified" }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Webhook error:", error);
     return NextResponse.json(
       { error: "Internal server error" },

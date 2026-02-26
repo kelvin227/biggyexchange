@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable*/
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -21,7 +22,6 @@ import NotiBell from "./NotiBell";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -84,7 +84,6 @@ export default function HeaderCom({
 }) {
   const [Lang, setLang] = useState("En");
   const [isOpen, setIsOpen] = useState(false);
-  const [profileMenu, setProfileMenu] = useState(false);
 
   useEffect(() => {
     // Check if window is defined (i.e., we are on the client-side)
@@ -170,7 +169,6 @@ export default function HeaderCom({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {/* eslint-disable-next-line */}
         <NotiBell
           tnotifications={t.notifications}
           tsentYou={t.sentYou}
