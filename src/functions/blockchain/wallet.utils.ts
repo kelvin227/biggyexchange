@@ -4,15 +4,24 @@ import { ethers, formatUnits } from "ethers";
 import { completetrans } from "../user";
 import crypto from "crypto";
 import * as bip39 from "bip39";
-import { Keypair, Connection, PublicKey  } from "@solana/web3.js";
+import { Keypair, Connection, PublicKey, Transaction, SystemProgram, clusterApiUrl  } from "@solana/web3.js";
 import { derivePath } from "ed25519-hd-key";
+import bcrypt from "bcryptjs";
 /* eslint-disable */
 
 const adminWallet = "0xd8c8223d43F6AD2af6D5c6399C6Fc63aF42253B6";
 const usdtcontractaddress = "0x55d398326f99059ff775485246999027b3197955";
-const provider = new ethers.JsonRpcProvider(
-  `https://bsc-mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`
-);
+const Networks = {
+  eth:`https://mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`,
+  bsc:`https://bsc-mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`,
+  ethsepolia:`https://sepolia.infura.io/v3/${process.env.INFRUA_API_KEY}`,
+  solana:`https://api.mainnet-beta.solana.com`,
+  solanaDevnet:`https://api.devnet.solana.com`,
+  solanaTestnet:`https://api.testnet.solana.com`
+  
+}
+  
+
 const abi = [
   {
     inputs: [],
@@ -292,6 +301,20 @@ function encrypt(text: string, password: string) {
   return iv.toString("hex") + ":" + encrypted;
 }
 
+function decrypt(encryptedText: string, password: string) {
+  const [ivHex, encrypted] = encryptedText.split(":");
+
+  const iv = Buffer.from(ivHex, "hex");
+  const key = crypto.scryptSync(password, "salt", 32);
+
+  const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
+
+  const decrypted =
+    decipher.update(encrypted, "hex", "utf8") + decipher.final("utf8");
+
+  return decrypted;
+}
+
 export async function createSolanaWallet(
   password: string,
   email: string,
@@ -500,7 +523,9 @@ export async function getBnbBalance(address: string) {
   
   //return {success: true, message: balance};
 }
-export async function getEthBalance(address: string) {
+export async function getEthBalance(
+  address: string
+) {
   //(address: string) {
   const usdtresponse = await fetch(
     `https://api.etherscan.io/v2/api?chainid=1&module=account&action=balance&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
@@ -511,10 +536,25 @@ export async function getEthBalance(address: string) {
   return { success: true, message: balance };
   //return {success: true, message: balance};
 }
-export async function getSolBalance(address: string) {
+export async function getSolBalance(address: string, net: string) {
   try {
+    let rpcUrl;
+    switch (net) {
+      case "mainnet":
+        rpcUrl = Networks.solana;
+        break;
+      case "testnet":
+        rpcUrl = Networks.solanaTestnet;
+        break;
+      case "devnet":
+        rpcUrl = Networks.solanaDevnet;
+        break;
+      default:
+        throw new Error("Invalid Solana network");
+    }
+
     const connection = new Connection(
-      "https://api.mainnet-beta.solana.com",
+      rpcUrl,
       "confirmed"
     );
 
@@ -526,6 +566,79 @@ export async function getSolBalance(address: string) {
     return Number(balanceSOL.toFixed(6));
   } catch (err) {
     throw new Error("Invalid Solana address or RPC error");
+  }
+}
+export async function sendSol(
+  email: string, // Uint8Array format
+  recipientAddress: string,
+  amountSol: number,
+  network: "mainnet-beta" | "devnet" | "testnet",
+  password: string
+) {
+  try {
+    // 1️⃣ Connect to network
+    const connection = new Connection(clusterApiUrl(network), "confirmed");
+
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, password: true },
+    });
+
+      if (!user) {
+          return { success: false, error: "User not found" };
+      }
+      const confirmPassword = bcrypt.compareSync(password, user.password);
+
+      if (!confirmPassword) {
+          return { success: false, error: "Incorrect password" };
+      }
+
+      const solanaWallet = await prisma.solanaWallets.findUnique({
+          where: { userId: user.id },
+      });
+      if (!solanaWallet) {
+          return { success: false, error: "Solana wallet not found" };
+      }
+
+    const decrypted = decrypt(solanaWallet.private_key, password);
+
+    // 2️⃣ Create sender keypair
+    const sender = Keypair.fromSecretKey(
+      Uint8Array.from(Buffer.from(decrypted, "hex"))
+    );
+
+    // 3️⃣ Create recipient public key
+    const recipient = new PublicKey(recipientAddress);
+
+    // 4️⃣ Convert SOL to lamports
+    const lamports = amountSol * 1_000_000_000;
+
+    // 5️⃣ Create transaction
+    const transaction = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: sender.publicKey,
+        toPubkey: recipient,
+        lamports,
+      })
+    );
+
+    // 6️⃣ Send transaction
+    const signature = await connection.sendTransaction(
+      transaction,
+      [sender]
+    );
+
+    return {
+      success: true,
+      signature,
+      explorer: `https://explorer.solana.com/tx/${signature}?cluster=${network}`,
+    };
+  } catch (error) {
+    console.error("Error in sendSol:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",};
   }
 }
 
@@ -765,104 +878,224 @@ export async function sendusdt(
     }
   }
 }
+export async function getTestEthBal(
+  address: string
+) {
+  //(address: string) {
+  const usdtresponse = await fetch(
+    `https://api.etherscan.io/v2/api?chainid=11155111&module=account&action=balance&address=${address}&tag=latest&apikey=${process.env.ETHER_API_KEY}`
+  );
+  const data = await usdtresponse.json();
+  const balance = ethers.formatEther(data.result); // Assuming the API returns the balance in the 'result' field
+
+  return { success: true, message: balance };
+  //return {success: true, message: balance};
+}
+export async function sendtestEth(
+   amount: string,
+  recipient: string,
+  email: string
+) {
+  try {
+    if (!amount || Number(amount) <= 0) {
+      throw new Error("Invalid amount provided.");
+    }
+
+    if (!recipient) {
+      throw new Error("Recipient address is required.");
+    }
+
+    // Convert amount to wei (BigInt)
+    const amountInWei = ethers.parseEther(amount);
+
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return { success: false, message: "Failed to get user info" };
+    }
+
+    const wallets = await prisma.wallets.findUnique({
+      where: { userId: user.id },
+      select: { address: true, private_key: true },
+    });
+
+    if (!wallets?.private_key || !wallets?.address) {
+      return { success: false, message: "Wallet not found" };
+    }
+
+    // Setup provider
+    const provider = new ethers.JsonRpcProvider(Networks.ethsepolia);
+
+    const wallet = new ethers.Wallet(wallets.private_key, provider);
+
+    // 1️⃣ Estimate Gas
+    const gasLimit = await provider.estimateGas({
+      from: wallets.address,
+      to: recipient,
+      value: amountInWei,
+    });
+
+    // Add 20% safety buffer
+    const bufferedGasLimit = (gasLimit * 12n) / 10n;
+
+    // 2️⃣ Get Gas Price
+    const feeData = await provider.getFeeData();
+      if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
+      throw new Error("Failed to fetch EIP-1559 fee data");
+    }
+
+
+    // 3️⃣ Calculate Total Gas Cost
+    const totalGasCostWei = bufferedGasLimit * feeData.maxFeePerGas;
+
+    // 4️⃣ Get Sender Balance
+    const senderBalanceWei = await provider.getBalance(wallets.address);
+
+    // 5️⃣ Check if sender has enough for amount + gas
+    if (senderBalanceWei < amountInWei + totalGasCostWei) {
+      return {
+        success: false,
+        message: "Insufficient ETH for amount + gas fees",
+      };
+    }
+
+    console.log("Gas Limit:", bufferedGasLimit.toString());
+    console.log("max fee per gas:", feeData.maxFeePerGas.toString());
+    console.log(
+      "Max Priority Fee Per Gas:",
+      feeData.maxPriorityFeePerGas.toString()
+    );
+    console.log("Gas Cost (Eth):", ethers.formatEther(totalGasCostWei));
+
+    // 6️⃣ Send Transaction
+    const tx = await wallet.sendTransaction({
+      to: recipient,
+      value: amountInWei,
+      gasLimit: bufferedGasLimit,
+      maxFeePerGas: feeData.maxFeePerGas!,
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas!,
+    });
+
+
+
+
+
+    ///remove the tx.wait and replace with something that doesn'y hold server execution time
+    await tx.wait();
+
+    return { success: true, message: "ETH sent successfully", Txhash: tx.hash };
+
+  } catch (error: any) {
+    console.error("Transaction error:", error);
+    return { success: false, message: error.message };
+  }
+}
 
 export async function sendEth(
   amount: string,
   recipient: string,
   email: string
 ) {
-  if (!amount || Number(amount) <= 0) {
-    throw new Error("Invalid amount provided.");
-  }
+  try {
+    if (!amount || Number(amount) <= 0) {
+      throw new Error("Invalid amount provided.");
+    }
 
-  if (!recipient) {
-    throw new Error("Recipient address is required.");
-  }
-  const amountInWei = ethers.parseEther(amount);
-  const hexValue = ethers.toBeHex(amountInWei);
+    if (!recipient) {
+      throw new Error("Recipient address is required.");
+    }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true },
-  });
-  console.log("user from sendtest", user);
-  if (!user) {
-    return { success: false, message: "failed to get user info" };
-  }
-  const wallets = await prisma.wallets.findUnique({
-    where: { userId: user.id },
-    select: { address: true, encrypted_key: true, private_key: true },
-  });
+    // Convert amount to wei (BigInt)
+    const amountInWei = ethers.parseEther(amount);
 
-  const provider = new ethers.JsonRpcProvider(
-    `https://mainnet.infura.io/v3${process.env.INFRUA_API_KEY}`
-  );
-  // const decrypt_private_key = await ethers.Wallet.fromEncryptedJson(privateK.private_key, password);
-  const wallet = new ethers.Wallet(wallets?.private_key as string, provider);
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
 
-  //if (!decrypt_private_key) {
-  //    throw new Error("Invalid password or wallet not found");
-  //}
+    if (!user) {
+      return { success: false, message: "Failed to get user info" };
+    }
 
-  // Optional: Check sender's BNB balance for gas fees
-  const senderEthBalance = await getEthBalance(wallets?.address as string);
-  // You might want to estimate gas for the transaction more precisely here.
-  // For a simple transfer, a rough estimate is okay, but it's crucial for users to have enough BNB.
-  const estimatedGasLimit = ethers.formatEther("60000"); // A common estimate for token transfer
+    const wallets = await prisma.wallets.findUnique({
+      where: { userId: user.id },
+      select: { address: true, private_key: true },
+    });
 
-  
-  const apiKey = '3320c6924e474dec8a44f475f6bf0bc2'; // Use environment variables for security
-  const url = `https://bsc-mainnet.nodereal.io/v1/${apiKey}`;
+    if (!wallets?.private_key || !wallets?.address) {
+      return { success: false, message: "Wallet not found" };
+    }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'eth_estimateGas',
-      params: [{"from": wallets?.address, "to": recipient, "value": hexValue}],
-      id: 1,
-    }),
-  });
+    // Setup provider
+    const provider = new ethers.JsonRpcProvider(
+      `https://mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`
+    );
 
-  const data = await response.json();
-  
-  if (data.result) {
-    // Convert hex wei to decimal BNB
-    const wei = BigInt(data.result);
-    const estimatedGas = Number(wei) / 1e18;
+    const wallet = new ethers.Wallet(wallets.private_key, provider);
 
-    const requiredEth = estimatedGas + parseInt(senderEthBalance.message);
+    // 1️⃣ Estimate Gas
+    const gasLimit = await provider.estimateGas({
+      from: wallets.address,
+      to: recipient,
+      value: amountInWei,
+    });
 
-    if (parseInt(senderEthBalance.message) < Number(requiredEth)) {
-    return {
-      success: false,
-      message: `Insufficient Eth for gas fees in wallet ${wallets?.address}. Needs approx. ${requiredEth} Ethereum.`,
-    };
-  }
+    // Add 20% safety buffer
+    const bufferedGasLimit = (gasLimit * 12n) / 10n;
+
+    // 2️⃣ Get Gas Price
+    const feeData = await provider.getFeeData();
+      if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
+      throw new Error("Failed to fetch EIP-1559 fee data");
+    }
 
 
-    // 4. Send the Transaction
+    // 3️⃣ Calculate Total Gas Cost
+    const totalGasCostWei = bufferedGasLimit * feeData.maxFeePerGas;
 
-  console.log(
-    `Attempting to transfer ${amount} Eth from ${wallets?.address} to ${recipient}`
-  );
-  if (wallet) {
+    // 4️⃣ Get Sender Balance
+    const senderBalanceWei = await provider.getBalance(wallets.address);
+
+    // 5️⃣ Check if sender has enough for amount + gas
+    if (senderBalanceWei < amountInWei + totalGasCostWei) {
+      return {
+        success: false,
+        message: "Insufficient ETH for amount + gas fees",
+      };
+    }
+
+    console.log("Gas Limit:", bufferedGasLimit.toString());
+    console.log("max fee per gas:", feeData.maxFeePerGas.toString());
+    console.log(
+      "Max Priority Fee Per Gas:",
+      feeData.maxPriorityFeePerGas.toString()
+    );
+    console.log("Gas Cost (Eth):", ethers.formatEther(totalGasCostWei));
+
+    // 6️⃣ Send Transaction
     const tx = await wallet.sendTransaction({
       to: recipient,
-      value: ethers.parseEther(amount),
-      gasLimit: ethers.parseEther(estimatedGasLimit),
+      value: amountInWei,
+      gasLimit: bufferedGasLimit,
+      maxFeePerGas: feeData.maxFeePerGas!,
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas!,
     });
-    console.log("error sending a getting user detials", wallet);
-    console.log("Transaction Hash:", tx.hash);
-    console.log(tx);
-    await tx.wait(); // Wait for the transaction to be mined
-    return { success: true, message: "Eth sent successfully" };
-  }
-  return { success: false, message: wallet };
 
-  }else{
-    throw new Error('Failed to estimate gas');
+
+    console.log("Transaction Hash:", tx.hash);
+
+    await tx.wait();
+
+    return { success: true, message: "ETH sent successfully" };
+
+  } catch (error: any) {
+    console.error("Transaction error:", error);
+    return { success: false, message: error.message };
   }
 }
 
@@ -871,76 +1104,98 @@ export async function sendtest(
   recipient: string,
   email: string
 ) {
-  if (!amount || Number(amount) <= 0) {
-    throw new Error("Invalid amount provided.");
-  }
+  try {
+    if (!amount || Number(amount) <= 0) {
+      throw new Error("Invalid amount provided.");
+    }
 
-  if (!recipient) {
-    throw new Error("Recipient address is required.");
-  }
+    if (!recipient) {
+      throw new Error("Recipient address is required.");
+    }
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true },
-  });
-  console.log("user from sendtest", user);
-  if (!user) {
-    return { success: false, message: "failed to get user info" };
-  }
-  const wallets = await prisma.wallets.findUnique({
-    where: { userId: user.id },
-    select: { address: true, encrypted_key: true, private_key: true },
-  });
+    // Convert amount to wei (BigInt)
+    const amountInWei = ethers.parseEther(amount);
 
-  const provider = new ethers.JsonRpcProvider(
-    `https://bsc-mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`
-  );
-  // const decrypt_private_key = await ethers.Wallet.fromEncryptedJson(privateK.private_key, password);
-  const wallet = new ethers.Wallet(wallets?.private_key as string, provider);
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
 
-  //if (!decrypt_private_key) {
-  //    throw new Error("Invalid password or wallet not found");
-  //}
+    if (!user) {
+      return { success: false, message: "Failed to get user info" };
+    }
 
-  // Optional: Check sender's BNB balance for gas fees
-  const senderBNBBalance = await getBnbBalance(wallets?.address as string);
-  // You might want to estimate gas for the transaction more precisely here.
-  // For a simple transfer, a rough estimate is okay, but it's crucial for users to have enough BNB.
-  const estimatedGasLimit = ethers.formatEther("60000"); // A common estimate for token transfer
-  const gasPrice = await estimateGas(
-    wallets?.address as string,
-    recipient,
-    amount
-  );
-  const gaspriceconvert = parseInt(gasPrice?.gasPrice, 16);
-  const requiredBNB = gaspriceconvert * Number(estimatedGasLimit);
-  if (Number(senderBNBBalance.message) < Number(requiredBNB)) {
-    return {
-      success: false,
-      message: `Insufficient BNB for gas fees in wallet ${wallets?.address}. Needs approx. ${requiredBNB} BNB.`,
-    };
-  }
+    const wallets = await prisma.wallets.findUnique({
+      where: { userId: user.id },
+      select: { address: true, private_key: true },
+    });
 
-  // 4. Send the Transaction
-  console.log(
-    `Attempting to transfer ${amount} USDT from ${wallets?.address} to ${recipient}`
-  );
-  if (wallet) {
+    if (!wallets?.private_key || !wallets?.address) {
+      return { success: false, message: "Wallet not found" };
+    }
+
+    // Setup provider
+    const provider = new ethers.JsonRpcProvider(
+      `https://bsc-mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`
+    );
+
+    const wallet = new ethers.Wallet(wallets.private_key, provider);
+
+    // 1️⃣ Estimate Gas
+    const gasLimit = await provider.estimateGas({
+      from: wallets.address,
+      to: recipient,
+      value: amountInWei,
+    });
+
+    // Add 20% safety buffer
+    const bufferedGasLimit = (gasLimit * 12n) / 10n;
+
+    // 2️⃣ Get Gas Price
+    const feeData = await provider.getFeeData();
+    const gasPrice = feeData.gasPrice;
+
+    if (!gasPrice) {
+      throw new Error("Failed to fetch gas price");
+    }
+
+    // 3️⃣ Calculate Total Gas Cost
+    const totalGasCostWei = bufferedGasLimit * gasPrice;
+
+    // 4️⃣ Get Sender Balance
+    const senderBalanceWei = await provider.getBalance(wallets.address);
+
+    // 5️⃣ Check if sender has enough for amount + gas
+    if (senderBalanceWei < amountInWei + totalGasCostWei) {
+      return {
+        success: false,
+        message: "Insufficient BNB for amount + gas fees",
+      };
+    }
+
+    console.log("Gas Limit:", bufferedGasLimit.toString());
+    console.log("Gas Price:", gasPrice.toString());
+    console.log("Gas Cost (BNB):", ethers.formatEther(totalGasCostWei));
+
+    // 6️⃣ Send Transaction
     const tx = await wallet.sendTransaction({
       to: recipient,
-      value: ethers.parseEther(amount),
-      gasLimit: ethers.parseEther(estimatedGasLimit),
+      value: amountInWei,
+      gasLimit: bufferedGasLimit,
+      gasPrice: gasPrice,
     });
-    console.log("error sending a getting user detials", wallet);
-    console.log("Transaction Hash:", tx.hash);
-    console.log(tx);
-    await tx.wait(); // Wait for the transaction to be mined
-    return { success: true, message: "BNB sent successfully" };
-  }
-  return { success: false, message: wallet };
 
-  //const data = await wallet; // Assuming the API returns the balance in the 'result' field
-  //return ethers.formatEther(balance);
+    console.log("Transaction Hash:", tx.hash);
+
+    await tx.wait();
+
+    return { success: true, message: "BNB sent successfully" };
+
+  } catch (error: any) {
+    console.error("Transaction error:", error);
+    return { success: false, message: error.message };
+  }
 }
 
 export async function estimateGas(
@@ -949,6 +1204,11 @@ export async function estimateGas(
   amount: string
 ) {
   try {
+    
+  const provider = new ethers.JsonRpcProvider(
+    `https://bsc-mainnet.infura.io/v3/${process.env.INFRUA_API_KEY}`
+  );
+
     const usdtContractAddress = "0x55d398326f99059fF775485246999027B3197955"; // USDT on BSC
     // 2. Instantiate USDT Contract
     const usdtContract = new ethers.Contract(

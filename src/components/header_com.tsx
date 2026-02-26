@@ -18,6 +18,14 @@ import { NavItems, NavItemsChi } from "@/app/(User)/user/(User)/user_config";
 import { LogOut } from "../../actions/authactions";
 import { FaEarthAmericas } from "react-icons/fa6";
 import NotiBell from "./NotiBell";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
 
 // Add translation object at the top
 const translations = {
@@ -65,9 +73,18 @@ interface Notification {
   createdAt: Date;
 }
 
-export default function HeaderCom({ notificationIsRead, img, kyc }: { notificationIsRead:  Notification[], img: string, kyc: boolean}) {
+export default function HeaderCom({
+  notificationIsRead,
+  img,
+  kyc,
+}: {
+  notificationIsRead: Notification[];
+  img: string;
+  kyc: boolean;
+}) {
   const [Lang, setLang] = useState("En");
   const [isOpen, setIsOpen] = useState(false);
+  const [profileMenu, setProfileMenu] = useState(false);
 
   useEffect(() => {
     // Check if window is defined (i.e., we are on the client-side)
@@ -94,7 +111,6 @@ export default function HeaderCom({ notificationIsRead, img, kyc }: { notificati
   } else {
     NavItem = NavItems;
   }
-
 
   return (
     <header className="flex items-center h-16 px-4 border-b shrink-0 md:px-6 justify-between">
@@ -154,8 +170,13 @@ export default function HeaderCom({ notificationIsRead, img, kyc }: { notificati
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-          {/* eslint-disable-next-line */}
-        <NotiBell tnotifications={t.notifications} tsentYou={t.sentYou} tbtcLow={t.btcLow} notification={notificationIsRead as any} />
+        {/* eslint-disable-next-line */}
+        <NotiBell
+          tnotifications={t.notifications}
+          tsentYou={t.sentYou}
+          tbtcLow={t.btcLow}
+          notification={notificationIsRead as any}
+        />
         <BadgeCheck
           className={
             kyc
@@ -190,54 +211,62 @@ export default function HeaderCom({ notificationIsRead, img, kyc }: { notificati
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="overflow-hidden rounded-full "
-            >
-              <Avatar
-                className={
-                  kyc
-                    ? "border-2 border-green-500 sm:border-2 sm:border-green-500 md:border-0 md:border-green-500 lg:border-0 lg:border-green-500"
-                    : "border-2 border-red-500 sm:border-2 sm:border-red-500 md:border-0 md:border-red-500 lg:border-0 lg:border-red-500"
-                }
-              >
-                <AvatarImage
-                  src={img}
-                  alt="@shadcn"
-                />
-                <AvatarFallback>CN</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{t.myAccount}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/profile/overview">{t.profile}</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={"/profile/user_kyc"}>{t.kyc}</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={"/profile/task"}>{t.taskCenter}</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={"/profile/security"}>{t.security}</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>{t.support}</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={async () => {
-                await LogOut();
-              }}
-            >
-              {t.logout}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex flex-cols-4 mt-2 w-full gap-4">
+          {/* Solana Creation Button */}
+          <div
+            className={profileMenu ? "hidden" : "flex flex-col gap-4 w-full"}
+          >
+            <Dialog>
+              <DialogTrigger                   
+                  className="overflow-hidden rounded-full">
+                  <Avatar
+                    className={
+                      kyc
+                        ? "border-2 border-green-500 sm:border-2 sm:border-green-500 md:border-0 md:border-green-500 lg:border-0 lg:border-green-500"
+                        : "border-2 border-red-500 sm:border-2 sm:border-red-500 md:border-0 md:border-red-500 lg:border-0 lg:border-red-500"
+                    }
+                  >
+                    <AvatarImage src={img} alt="@shadcn" />
+                    <AvatarFallback>CN</AvatarFallback>
+                  </Avatar>
+              </DialogTrigger>
+              <DialogContent className="max-w-[400px] sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle>My Account</DialogTitle>
+                  <DropdownMenuSeparator />
+                </DialogHeader>
+
+                <div>
+                  <div className="grid grid-cols">
+                    <Link href="/profile/overview" className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                      {t.profile}
+                    </Link>
+                    <Link href={"/profile/user_kyc"} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                      {t.kyc}
+                      </Link>
+                      <Link href={"/profile/task"} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                      {t.taskCenter}
+                      </Link>
+                      <Link href={"/profile/security"} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                      {t.security}
+                      </Link>
+                      <Link href={"/profile/support"} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                      {t.support}
+                      </Link>
+                      <DropdownMenuSeparator />
+                      <Button variant="default" className="w-full bg-red-700 text-white-700 hover:bg-red-700/50" onClick={async () => {
+                        await LogOut();
+                      }}>
+                        {t.logout}
+                      </Button>
+
+                  </div>
+                </div>
+
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
       </div>
     </header>
   );

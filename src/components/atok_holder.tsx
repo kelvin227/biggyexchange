@@ -2,27 +2,29 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { ChevronRight } from "lucide-react";
+import { toast } from "sonner";
+import PaystackPop from '@paystack/inline-js'
 
-export default function AtokHolder({
-  ETH,
-  BTC,
-  TON,
-  SOL,
-  USDT,
-  Pi,
+export default function MarketPlaceComponent({
+  email,
+  eth,
+  usdt,
+  bnb,
+  sol,
 }: {
-  ETH: string;
-  BTC: string;
-  TON: string;
-  SOL: string;
-  USDT: string;
-  Pi: string;
+  email: string;
+  eth: string;
+  usdt: string;
+  bnb: string;
+  sol: string;
 }) {
   const [active, setActive] = useState<"buy" | "sell" | null>(null);
   const [selectedCoin, setSelectedCoin] = useState<(typeof coins)[0] | null>(
     null
   );
   const [ngnAmount, setNgnAmount] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const popup = new PaystackPop();
 
   // Calculate USD value from NGN input and coin rate
   const usdValue =
@@ -41,13 +43,36 @@ export default function AtokHolder({
   //get the usd price for each crpyto
 
   const coins = [
-    { name: "Ethereum", symbol: "ETH", rate: 1450, price: `$${ETH}` },
-    { name: "Bitcoin", symbol: "BTC", rate: 1450, price: `$${BTC}` },
-    { name: "Solana", symbol: "SOL", rate: 1450, price: `$${SOL}` },
-    { name: "Toncoin", symbol: "TON", rate: 1450, price: `$${TON}` },
-    { name: "Pi Network", symbol: "PI", rate: 1450, price: `$${Pi}` },
-    { name: "USDT", symbol: "USDT", rate: 1450, price: `$${USDT}` },
+    { name: "Ethereum", symbol: "ETH", rate: 1450, price: `$${eth}` },
+    { name: "Solana", symbol: "SOL", rate: 1450, price: `$${sol}` },
+    { name: "Toncoin", symbol: "TON", rate: 1450, price: `$${bnb}` },
+    { name: "USDT", symbol: "USDT", rate: 1450, price: `$${usdt}` },
   ];
+
+  const Buy = async () => {
+    try {
+
+      const response = await fetch("api/buy/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          nairaAmount: ngnAmount,
+          cryptoType: selectedCoin?.symbol,
+          })
+          });
+
+          if(response.ok){
+            const data = await response.json();
+            setLoading(false);
+            toast.success("Transaction initialized successfully. Please proceed to payment.");
+            popup.resumeTransaction(data.accesscode);
+          }
+
+    } catch (error: any) {
+     toast.error("An error occurred while processing your request. Please try again.", error) 
+    }
+  }
 
   return (
     <div className="w-full flex flex-col items-center pt-10">
@@ -175,7 +200,8 @@ export default function AtokHolder({
             </button>
             <button
               className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-              disabled={!ngnAmount || parseFloat(ngnAmount) <= 0}
+              disabled={!ngnAmount || parseFloat(ngnAmount) <= 0  || loading}
+              onClick={Buy}
             >
               Continue
             </button>

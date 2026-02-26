@@ -116,25 +116,25 @@ model ads {
 }
 
 model adsTransaction {
-  id                  String         @id @default(cuid())
-  adId                String
-  orderId             String         @unique
-  coin                String
-  receipt             String
-  type                String?
-  price               String
-  status              String
-  amount              String
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
-  userId              String
-  walletAddress       String?
-  merchantID          String
-  userName            String
-  merchantconfirm     String         @default("pending")
-  customerconfirm     String         @default("pending")
-  dispute             dispute[]
-  tradeprocess tradeprocess[]
+  id              String         @id @default(cuid())
+  adId            String
+  orderId         String         @unique
+  coin            String
+  receipt         String
+  type            String?
+  price           String
+  status          String
+  amount          String
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  userId          String
+  walletAddress   String?
+  merchantID      String
+  userName        String
+  merchantconfirm String         @default("pending")
+  customerconfirm String         @default("pending")
+  dispute         dispute[]
+  tradeprocess    tradeprocess[]
 
   User User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -187,7 +187,6 @@ model tradeprocess {
   OrderId adsTransaction @relation(fields: [orderid], references: [orderId], onDelete: Cascade)
 }
 
-
 model solanaWallets {
   id            String   @id @default(cuid())
   address       String   @unique
@@ -199,4 +198,16 @@ model solanaWallets {
   userId        String   @unique
 
   User User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id               String   @id @default(cuid())
+  userId           String
+  nairaAmount      String
+  cryptoAmount     String
+  cryptoType       String
+  PaymentReference String?   @unique
+  status           String
+  txHash           String?
+  createdAt        DateTime @default(now())
 }

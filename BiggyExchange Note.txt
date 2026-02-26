@@ -196,3 +196,6 @@ Now that admin BTC address exists, the **real work** begins:
 5️⃣ **Withdrawal request flow (manual)**
 
 Reply with **one number**, and I’ll give you **production-ready Next.js + Prisma code** for that step.
+
+Notes
+update the createsolana wallet function to confirm user password before creating wallet
