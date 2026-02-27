@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
       );
     }
     await pusherServer.trigger(`transaction-${reference}`, "status-update", {
-      status: "Sending crypto",
+      status: "Sent",
       txHash: sendCrypto.Txhash,
     });
     // (We will connect this next)

@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     })
 
     return NextResponse.json(
-        { success: true, authorizationUrl, accesscode },
+        { success: true, authorizationUrl, accesscode, paymentReference },
         { status: 200 }
       );
   }

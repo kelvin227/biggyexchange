@@ -28,7 +28,7 @@ export default function MarketPlaceComponent({
   const [ngnAmount, setNgnAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const popup = new PaystackPop();
-  let reference = ""; // Store the reference for the current transaction
+  const [reference, setRefe] = useState<string>("");
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
   const [txHash, setTxHash] = useState<string>("");
 
@@ -63,13 +63,17 @@ useEffect(() => {
   const pusher = new Pusher(
     process.env.NEXT_PUBLIC_PUSHER_KEY!,
     {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      cluster: "mt1",
     }
   );
 
   const channel = pusher.subscribe(`transaction-${reference}`);
 
   channel.bind("status-update", function (data: any) {
+    console.log("Received Pusher event:", data);
+    console.log("Current paymentStatus:", paymentStatus);
+    console.log("Event status:", data.status);
+    console.log("Event txHash:", data.txHash);
     setPaymentStatus(data.status);
 
     if (data.txHash) {
@@ -99,6 +103,7 @@ useEffect(() => {
             const data = await response.json();
             toast.success("Transaction initialized successfully. Please proceed to payment.");
             popup.resumeTransaction(data.accesscode);
+            setRefe(data.paymentReference);
             setLoading(false);
           } else{
             const errorText = await response.text();
@@ -182,7 +187,7 @@ useEffect(() => {
       )}
 
       {/* Step 3: Input NGN and show USD value */}
-      {selectedCoin && (
+      {selectedCoin && paymentStatus === "pending" && (
         <div className="w-full max-w-md mt-8">
           <h3 className="text-2xl font-bold mb-4 text-center">
             {active === "buy" ? "Buy" : "Sell"} {selectedCoin.name}
@@ -248,25 +253,25 @@ useEffect(() => {
         </div>
       )}
       {selectedCoin && paymentStatus === "paid" && (
-  <div className="text-yellow-600">
-    Payment received. Preparing crypto transfer...
-  </div>
-)}
+      <div className="text-yellow-600">
+        Payment received. Preparing crypto transfer...
+      </div>
+      )}
 
-{selectedCoin && paymentStatus === "sending" && (
-  <div className="text-blue-600">
-    Sending crypto to your wallet...
-  </div>
-)}
+        {selectedCoin && paymentStatus === "Sending crypto" && (
+          <div className="text-blue-600">
+            Sending crypto to your wallet...
+          </div>
+        )}
 
-{selectedCoin &&paymentStatus === "sent" && (
-  <div className="text-green-600">
-    ✅ Crypto sent successfully!
-    <div className="text-sm mt-2">
-      Tx: {txHash}
-    </div>
-  </div>
-)}
+        {selectedCoin && paymentStatus === "sent" && (
+          <div className="text-green-600">
+            ✅ Crypto sent successfully!
+            <div className="text-sm mt-2">
+              Tx: {txHash}
+            </div>
+          </div>
+        )}
     </div>
   );
 }
