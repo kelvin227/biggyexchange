@@ -4,9 +4,9 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "./ui/card";
 import { ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import PaystackPop from '@paystack/inline-js'
+import PaystackPop from "@paystack/inline-js";
 import { Button } from "./ui/button";
-  import Pusher from "pusher-js";
+import Pusher from "pusher-js";
 
 export default function MarketPlaceComponent({
   email,
@@ -23,7 +23,7 @@ export default function MarketPlaceComponent({
 }) {
   const [active, setActive] = useState<"buy" | "sell" | null>(null);
   const [selectedCoin, setSelectedCoin] = useState<(typeof coins)[0] | null>(
-    null
+    null,
   );
   const [ngnAmount, setNgnAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -55,37 +55,32 @@ export default function MarketPlaceComponent({
     { name: "USDT", symbol: "USDT", rate: 1450, price: `$${usdt}` },
   ];
 
+  useEffect(() => {
+    if (!reference) return;
 
-
-useEffect(() => {
-  if (!reference) return;
-
-  const pusher = new Pusher(
-    process.env.NEXT_PUBLIC_PUSHER_KEY!,
-    {
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
       cluster: "mt1",
-    }
-  );
+    });
 
-  const channel = pusher.subscribe(`transaction-${reference}`);
+    const channel = pusher.subscribe(`transaction-${reference}`);
 
-  channel.bind("status-update", function (data: any) {
-    console.log("Received Pusher event:", data);
-    console.log("Current paymentStatus:", paymentStatus);
-    console.log("Event status:", data.status);
-    console.log("Event txHash:", data.txHash);
-    setPaymentStatus(data.status);
+    channel.bind("status-update", function (data: any) {
+      console.log("Received Pusher event:", data);
+      console.log("Current paymentStatus:", paymentStatus);
+      console.log("Event status:", data.status);
+      console.log("Event txHash:", data.txHash);
+      setPaymentStatus(data.status);
 
-    if (data.txHash) {
-      setTxHash(data.txHash);
-    }
-  });
+      if (data.txHash) {
+        setTxHash(data.txHash);
+      }
+    });
 
-  return () => {
-    channel.unbind_all();
-    channel.unsubscribe();
-  };
-}, [reference]);
+    return () => {
+      channel.unbind_all();
+      channel.unsubscribe();
+    };
+  }, [reference]);
   const Buy = async () => {
     try {
       setLoading(true);
@@ -96,27 +91,34 @@ useEffect(() => {
           email: email,
           nairaAmount: ngnAmount,
           cryptoType: selectedCoin?.symbol,
-          })
-          });
+        }),
+      });
 
-          if(response.ok){
-            const data = await response.json();
-            toast.success("Transaction initialized successfully. Please proceed to payment.");
-            popup.resumeTransaction(data.accesscode);
-            setRefe(data.paymentReference);
-            setLoading(false);
-          } else{
-            const errorText = await response.text();
-            console.error("Failed to initialize transaction", { status: response.status, errorText });
-            toast.error("Failed to initialize transaction. Please try again.");
-            setLoading(false);
-          }
-
-    } catch (error: any) {
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(
+          "Transaction initialized successfully. Please proceed to payment.",
+        );
+        popup.resumeTransaction(data.accesscode);
+        setRefe(data.paymentReference);
         setLoading(false);
-        toast.error("An error occurred while processing your request. Please try again.", error) 
+      } else {
+        const errorText = await response.text();
+        console.error("Failed to initialize transaction", {
+          status: response.status,
+          errorText,
+        });
+        toast.error("Failed to initialize transaction. Please try again.");
+        setLoading(false);
+      }
+    } catch (error: any) {
+      setLoading(false);
+      toast.error(
+        "An error occurred while processing your request. Please try again.",
+        error,
+      );
     }
-  }
+  };
 
   return (
     <div className="w-full flex flex-col items-center pt-10">
@@ -244,7 +246,7 @@ useEffect(() => {
             </Button>
             <Button
               className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-              disabled={!ngnAmount || parseFloat(ngnAmount) <= 0  || loading}
+              disabled={!ngnAmount || parseFloat(ngnAmount) <= 0 || loading}
               onClick={Buy}
             >
               Continue
@@ -252,26 +254,68 @@ useEffect(() => {
           </div>
         </div>
       )}
-      {selectedCoin && paymentStatus === "paid" && (
-      <div className="text-yellow-600">
-        Payment received. Preparing crypto transfer...
-      </div>
+      {selectedCoin && (
+        <div className="w-full max-w-md mt-6">
+          <Card>
+            <CardContent className="py-6 px-6 space-y-4">
+              <h4 className="text-lg font-semibold">Transaction Status</h4>
+              
+              {paymentStatus === "pending" && (
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
+                  <span className="text-yellow-600 font-medium">
+                    Pending Payment. Please complete the payment in the pop-up window that appears after clicking "Continue".
+                  </span>
+                </div>
+              )}
+
+              {paymentStatus === "paid" && (
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
+                  <span className="text-yellow-600 font-medium">
+                    Payment received. Preparing crypto transfer...
+                  </span>
+                </div>
+              )}
+
+              {paymentStatus === "Sending crypto" && (
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="text-blue-600 font-medium">
+                    Sending crypto to your wallet...
+                  </span>
+                </div>
+              )}
+
+              {paymentStatus === "Sent" && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <span className="text-green-600 font-semibold">
+                      Crypto sent successfully
+                    </span>
+                  </div>
+
+                  {txHash && (
+                    <div className="text-sm text-gray-500 break-all">
+                      Tx Hash: {txHash}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {paymentStatus === "failed" && (
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <span className="text-red-600 font-semibold">
+                    Transaction failed. Please contact support.
+                  </span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
-
-        {selectedCoin && paymentStatus === "Sending crypto" && (
-          <div className="text-blue-600">
-            Sending crypto to your wallet...
-          </div>
-        )}
-
-        {selectedCoin && paymentStatus === "Sent" && (
-          <div className="text-green-600">
-            ✅ Crypto sent successfully!
-            <div className="text-sm mt-2">
-              Tx: {txHash}
-            </div>
-          </div>
-        )}
     </div>
   );
 }
