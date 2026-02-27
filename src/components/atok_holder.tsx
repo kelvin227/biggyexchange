@@ -264,7 +264,7 @@ useEffect(() => {
           </div>
         )}
 
-        {selectedCoin && paymentStatus === "sent" && (
+        {selectedCoin && paymentStatus === "Sent" && (
           <div className="text-green-600">
             ✅ Crypto sent successfully!
             <div className="text-sm mt-2">
