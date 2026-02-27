@@ -31,16 +31,16 @@ export async function POST(req: Request) {
     }
 
 
-    const conertedDollar = parseFloat(nairaAmount) / rate; // Convert Naira to USD based on rate 
+    const convertedDollar = parseFloat(nairaAmount) / rate; // Convert Naira to USD based on rate 
 
     const price = await getPrice();
 
     if (cryptoType.toLowerCase() === "bnb"){
-        cryptoAmount = price.prices?.bnb / conertedDollar
+        cryptoAmount = (convertedDollar / price.prices?.bnb).toFixed(18)
     } else if (cryptoType.toLowerCase() === "sol"){
-        cryptoAmount = price.prices?.sol / conertedDollar
+        cryptoAmount = (convertedDollar / price.prices?.sol).toFixed(18);
     } else if (cryptoType.toLowerCase() === "eth"){
-        cryptoAmount = price.prices?.eth / conertedDollar
+        cryptoAmount = (convertedDollar / price.prices?.eth).toFixed(18);
     } 
 
     if (!cryptoAmount) {
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
     );
 
   } catch (error) {
-    console.error("POST /api/solana error:", error);
+    console.error("POST /api/buy/initialize error:", error);
     return NextResponse.json(
       { error: "Failed to process request" },
       { status: 500 }

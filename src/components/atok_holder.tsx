@@ -1,10 +1,12 @@
 "use client";
 /* eslint-disable*/
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "./ui/card";
 import { ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import PaystackPop from '@paystack/inline-js'
+import { Button } from "./ui/button";
+  import Pusher from "pusher-js";
 
 export default function MarketPlaceComponent({
   email,
@@ -26,6 +28,9 @@ export default function MarketPlaceComponent({
   const [ngnAmount, setNgnAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const popup = new PaystackPop();
+  let reference = ""; // Store the reference for the current transaction
+  const [paymentStatus, setPaymentStatus] = useState<string>("pending");
+  const [txHash, setTxHash] = useState<string>("");
 
   // Calculate USD value from NGN input and coin rate
   const usdValue =
@@ -50,9 +55,36 @@ export default function MarketPlaceComponent({
     { name: "USDT", symbol: "USDT", rate: 1450, price: `$${usdt}` },
   ];
 
+
+
+useEffect(() => {
+  if (!reference) return;
+
+  const pusher = new Pusher(
+    process.env.NEXT_PUBLIC_PUSHER_KEY!,
+    {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    }
+  );
+
+  const channel = pusher.subscribe(`transaction-${reference}`);
+
+  channel.bind("status-update", function (data: any) {
+    setPaymentStatus(data.status);
+
+    if (data.txHash) {
+      setTxHash(data.txHash);
+    }
+  });
+
+  return () => {
+    channel.unbind_all();
+    channel.unsubscribe();
+  };
+}, [reference]);
   const Buy = async () => {
     try {
-
+      setLoading(true);
       const response = await fetch("api/buy/initialize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,13 +97,19 @@ export default function MarketPlaceComponent({
 
           if(response.ok){
             const data = await response.json();
-            setLoading(false);
             toast.success("Transaction initialized successfully. Please proceed to payment.");
             popup.resumeTransaction(data.accesscode);
+            setLoading(false);
+          } else{
+            const errorText = await response.text();
+            console.error("Failed to initialize transaction", { status: response.status, errorText });
+            toast.error("Failed to initialize transaction. Please try again.");
+            setLoading(false);
           }
 
     } catch (error: any) {
-     toast.error("An error occurred while processing your request. Please try again.", error) 
+        setLoading(false);
+        toast.error("An error occurred while processing your request. Please try again.", error) 
     }
   }
 
@@ -190,7 +228,7 @@ export default function MarketPlaceComponent({
             )}
           </div>
           <div className="flex gap-4 mt-6">
-            <button
+            <Button
               className="px-6 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
               onClick={() => {
                 setSelectedCoin(null);
@@ -198,17 +236,37 @@ export default function MarketPlaceComponent({
               }}
             >
               &larr; Back
-            </button>
-            <button
+            </Button>
+            <Button
               className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold"
               disabled={!ngnAmount || parseFloat(ngnAmount) <= 0  || loading}
               onClick={Buy}
             >
               Continue
-            </button>
+            </Button>
           </div>
         </div>
       )}
+      {selectedCoin && paymentStatus === "paid" && (
+  <div className="text-yellow-600">
+    Payment received. Preparing crypto transfer...
+  </div>
+)}
+
+{selectedCoin && paymentStatus === "sending" && (
+  <div className="text-blue-600">
+    Sending crypto to your wallet...
+  </div>
+)}
+
+{selectedCoin &&paymentStatus === "sent" && (
+  <div className="text-green-600">
+    ✅ Crypto sent successfully!
+    <div className="text-sm mt-2">
+      Tx: {txHash}
+    </div>
+  </div>
+)}
     </div>
   );
 }
