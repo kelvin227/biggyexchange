@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable*/
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "./ui/card";
 import { ChevronRight } from "lucide-react";
 import { toast } from "sonner";
@@ -27,10 +27,15 @@ export default function MarketPlaceComponent({
   );
   const [ngnAmount, setNgnAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const popup = new PaystackPop();
   const [reference, setRefe] = useState<string>("");
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
   const [txHash, setTxHash] = useState<string>("");
+  const popupRef = useRef<PaystackPop | null>(null);
+
+
+useEffect(() => {
+  popupRef.current = new PaystackPop();
+}, []);
 
   // Calculate USD value from NGN input and coin rate
   const usdValue =
@@ -99,8 +104,7 @@ export default function MarketPlaceComponent({
         toast.success(
           "Transaction initialized successfully. Please proceed to payment.",
         );
-        popup.resumeTransaction(data.accesscode);
-        setRefe(data.paymentReference);
+        popupRef.current?.resumeTransaction(data.accesscode);        setRefe(data.paymentReference);
         setLoading(false);
       } else {
         const errorText = await response.text();
