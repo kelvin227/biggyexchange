@@ -2,7 +2,7 @@ import React from "react";
 //import { Payment } from "./columns";
 //import { TransactionTable } from "./trans";
 import { auth } from "@/auth";
-import Wallet from "./wallet-holder";
+import Wallet from "../../../../../components/wallet-holder";
 import { prisma } from "@/lib/db";
 import { getBalance, getBnbBalance, getEthBalance, getPrice, getSolBalance, getTestEthBal } from "@/functions/blockchain/wallet.utils";
 
