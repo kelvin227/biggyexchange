@@ -153,7 +153,7 @@ useEffect(() => {
       <div className="flex text-white w-full gap-5 flex-col justify-center bg-linear-[135deg,#f75959_0%,#f35587_100%] p-10 items-center">
         <Image
           alt="logo"
-          src="https://kalajtomdzamxvkl.public.blob.vercel-storage.com/logo2-6X2L1QaE3Zc3GrRsCHvW0JY0kcA7bx.png"
+          src="https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/BiggyExchnage%20Logo-LucbbNrqPh1QVTvE07OudDj4ugPAbQ.png"
           className="w-24 h-24"
           width={24}
           height={24}
