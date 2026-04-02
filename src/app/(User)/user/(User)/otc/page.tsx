@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { getUserByEmail } from "@/functions/user";
 import React from "react";
 import MarketPlaceComponent from "@/components/atok_holder";
-import { prisma } from "@/lib/db";
 import { getPrice } from "@/functions/blockchain/wallet.utils";
 
 // const randomHash = crypto.randomUUID();

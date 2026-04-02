@@ -1,6 +1,10 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import bcrypt from "bcryptjs"
+import crypto from "crypto";
+import { prisma } from "@/lib/db";
+
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -38,4 +42,37 @@ export function generateVerificationCode(length = 6) {
     code += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return code;
+}
+
+
+export function createWebhookHash(data: {
+  provider: string;
+  txHash?: string | null;
+  eventType: string;
+  chainId?: string | null;
+}) {
+  const base = `${data.provider}:${data.txHash ?? ""}:${data.eventType}:${data.chainId ?? ""}`;
+
+  return crypto.createHash("sha256").update(base).digest("hex");
+}
+
+export async function generateIssueNumberTx(tx:typeof prisma | any) {
+  const year = new Date().getFullYear();
+
+  const counter = await tx.issueCounter.upsert({
+    where: { year },
+    update: {
+      lastValue: {
+        increment: 1,
+      },
+    },
+    create: {
+      year,
+      lastValue: 1,
+    },
+  });
+
+  const paddedNumber = String(counter.lastValue).padStart(4, "0");
+
+  return `BGX-${year}-${paddedNumber}`;
 }

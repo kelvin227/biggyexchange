@@ -70,7 +70,7 @@ const Overview_page = ({email, profile}: {email: string, profile: User}) => {
             <Button
               variant="outline"
               size="icon"
-              className="overflow-hidden rounded-full"
+              className="rounded-full"
             >
               <Avatar>
                 <AvatarImage

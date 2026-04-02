@@ -27,10 +27,11 @@ model User {
   isBlocked       Boolean?         @default(false)
   kyc             Kyc[]
   Notification    Notification[]
-  userWallet      userWallet[]
+  accountDetails  AccountDetails[]
   wallet          wallets[]
   ads             ads[]
   adsTransaction  adsTransaction[]
+  transactions    Transaction[]
   traderequest    traderequest[]
   dispute         dispute[]
   solanaWallets   solanaWallets[]
@@ -59,19 +60,20 @@ model Kyc {
   user User @relation(fields: [userid], references: [id], onDelete: Cascade)
 }
 
-model userWallet {
+model AccountDetails {
   id             String   @id @default(cuid())
-  walletAddress  String?  @unique
-  walletAddress2 String?  @unique
-  walletAddress3 String?  @unique
-  walletAddress4 String?  @unique
-  walletAddress5 String?  @unique
-  walletAddress6 String?  @unique
-  walletAddress7 String?  @unique
+  accountName    String
+  bankName       String
+  accountNumber  String
+  bankCode       String  
+  recipientCode  String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
   userid         String   @unique
   user           User     @relation(fields: [userid], references: [id], onDelete: Cascade)
+
+  @@unique([bankCode, accountNumber])
 }
 
 model Notification {
@@ -207,7 +209,73 @@ model Transaction {
   cryptoAmount     String
   cryptoType       String
   PaymentReference String?   @unique
+  PlatformReference String? @unique
   status           String
   txHash           String?
   createdAt        DateTime @default(now())
+
+  User  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  webhookevent    WebhookEvent[]
+}
+
+
+model WebhookEvent {
+  id             String       @id @default(cuid())
+  provider       String
+  eventType      String
+  chainId        String?
+  txHash         String?
+  signature      String?
+  payloadHash    String?      @unique
+  transactionId  String?
+  payload        Json
+  processed      Boolean      @default(false)
+  processedAt    DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  transaction    Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([provider])
+  @@index([txHash])
+  @@index([transactionId])
+  @@index([processed])
+}
+
+model SupportIssue {
+  id                   String   @id @default(cuid())
+  issueNumber          String   @unique
+  name                 String
+  email                String
+  issueType            String
+  transactionReference String?
+  message              String
+  status               IssueStatus @default(OPEN)
+  priority             IssuePriority @default(MEDIUM)
+  assignedTo           String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model IssueCounter {
+  id        String   @id @default(cuid())
+  year      Int      @unique
+  lastValue Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }

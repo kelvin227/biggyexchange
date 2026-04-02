@@ -35,12 +35,12 @@ export default function middleware(req: any) {
         );
 
             /// chnage the case back to admin or web when he has bought a domain
-        case "adminBiggyexchange":
+        case "adminbiggyexchange":
         //case "web":
         return NextResponse.rewrite(
         new URL(`/admin${req.nextUrl.pathname}`, req.url)
         );
-            case "api":
+        case "api":
                 {
                     return NextResponse.rewrite(new URL(`/api${req.nextUrl.pathname}`, req.url));
                 }

@@ -14,13 +14,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { Menu, Wallet, BadgeCheck } from "lucide-react";
+import { Menu, Wallet, BadgeCheck, XIcon } from "lucide-react";
 import { NavItems, NavItemsChi } from "@/app/(User)/user/(User)/user_config";
 import { LogOut } from "../../actions/authactions";
 import { FaEarthAmericas } from "react-icons/fa6";
 import NotiBell from "./NotiBell";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -84,6 +85,7 @@ export default function HeaderCom({
 }) {
   const [Lang, setLang] = useState("En");
   const [isOpen, setIsOpen] = useState(false);
+  const [trigger, setTrigger] = useState(false);
 
   useEffect(() => {
     // Check if window is defined (i.e., we are on the client-side)
@@ -205,14 +207,19 @@ export default function HeaderCom({
               <Link href={"/wallet/transaction"}>{t.transactionHistory}</Link>
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Link href={"/wallet/payment/crypto"}>{t.paymentSettings}</Link>
+              <Link href={"/wallet/payment"}>{t.paymentSettings}</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex flex-cols-4 mt-2 w-full gap-4">
-            <Dialog>
+            <Dialog open={trigger}
+            defaultOpen={false}
+            >
+              
               <DialogTrigger                   
-                  className="overflow-hidden rounded-full">
+                  className="overflow-hidden rounded-full"
+                  onClick={() => setTrigger(!trigger)}
+                  >
                   <Avatar
                     className={
                       kyc
@@ -224,27 +231,33 @@ export default function HeaderCom({
                     <AvatarFallback>CN</AvatarFallback>
                   </Avatar>
               </DialogTrigger>
-              <DialogContent className="max-w-[400px] sm:max-w-[400px] flex flex-col gap-4 w-full">
+              <DialogContent className="max-w-[400px] sm:max-w-[400px] flex flex-col gap-4 w-full [&>button]:hidden">
                 <DialogHeader>
                   <DialogTitle>My Account</DialogTitle>
                   <DropdownMenuSeparator />
+                  <DialogClose onClick={() => setTrigger(!trigger)} className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4">
+                    <XIcon />
+                    <span className="sr-only">Close</span>
+              </DialogClose>
                 </DialogHeader>
+
+
 
                 <div>
                   <div className="grid grid-cols">
-                    <Link href="/profile/overview" className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                    <Link href="/profile/overview" onClick={() => setTrigger(!trigger)} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
                       {t.profile}
                     </Link>
-                    <Link href={"/profile/user_kyc"} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                    <Link href={"/profile/user_kyc"} onClick={() => setTrigger(!trigger)} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
                       {t.kyc}
                       </Link>
-                      <Link href={"/profile/task"} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                      <Link href={"/profile/task"} onClick={() => setTrigger(!trigger)} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
                       {t.taskCenter}
                       </Link>
-                      <Link href={"/profile/security"} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                      <Link href={"/profile/security"} onClick={() => setTrigger(!trigger)} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
                       {t.security}
                       </Link>
-                      <Link href={"/profile/support"} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
+                      <Link href={"/profile/support"} onClick={() => setTrigger(!trigger)} className="hover:bg-gradient-to-r from-yellow-500/60 via-yellow-400/60 to-yellow-600/60 rounded-md p-2">
                       {t.support}
                       </Link>
                       <DropdownMenuSeparator />

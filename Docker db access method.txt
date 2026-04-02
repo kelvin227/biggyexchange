@@ -1,0 +1,27 @@
+Docker db access method
+
+run this in the terminal while the docker/container is working
+
+docker exec -it launchgate-db psql -U launchgate -d launchgate 
+
+after that you run
+
+Once inside, list tables:
+
+\dt
+
+See one table structure:
+
+\d members
+
+See rows:
+
+SELECT * FROM members;
+
+Exit with:
+
+\q
+
+
+
+ok so last thing I worked on was to connect the firebase sign in to the backend to create a new member with the sign in but if the user exist then sign them in without creating a new user

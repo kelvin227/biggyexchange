@@ -11,11 +11,11 @@ export default function PicForm({ email }: { email: string }) {
   const [loading, setLoading] = useState<boolean>(false);
 
   const profileOptions = [
-    "https://kalajtomdzamxvkl.public.blob.vercel-storage.com/nft-7045692_1280-Ye8GvvLwx5JsRO3DSlrw62wA3soHHF.png",
-    "https://kalajtomdzamxvkl.public.blob.vercel-storage.com/user-160319_1280-1kW6tNlYEFDRH6edaJTC2VrOlfCOkJ.png",
-    "https://kalajtomdzamxvkl.public.blob.vercel-storage.com/avatar-1295402_1280-PZUng3f6nF0t1P0joVYDJCOfiXNutV.png",
-    "https://kalajtomdzamxvkl.public.blob.vercel-storage.com/icon-5355896_1280-bS4UCFenQCpzkgX2K9tZ5xrtS08LKh.png",
-    "https://kalajtomdzamxvkl.public.blob.vercel-storage.com/btcore-snail-7029697_1280-q8nbrtNSgTIWa57AwcgBbzNPzqSF9c.png"
+    "https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/default.jpeg",
+    "https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/villan.jpeg",
+    "https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/devil.jpeg",
+    "https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/hacker.jpeg",
+    "https://ulqf2xmuzjhvhqg7.public.blob.vercel-storage.com/hooded.jpeg"
   ];
 
   const handleSelectImage = (image: string) => {

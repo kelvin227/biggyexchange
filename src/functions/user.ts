@@ -6,30 +6,28 @@ import { VerificationEmail } from "@/components/emails/verificationCode";
 import { Resend } from "resend";
 import { generateVerificationCode, hashPassword } from "@/lib/utils";
 import TradeUpdateEmail from "@/components/emails/trade_update";
-import { getBalance, sendusdttrade } from "./blockchain/wallet.utils";
+import { sendusdttrade } from "./blockchain/wallet.utils";
 import { CancelMailTemplate } from "@/components/emails/cancelmail";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function sendtradeRequestmails(
+export async function sendSupportMail(
+  name: string,
   email: string,
-  id: string,
-  amount: string,
-  Coins: string,
-  status: string,
-  UserName: string
+  issueNumber: string,
+  issueType: string,
+  theme: "dark" | "light" = "dark"
 ) {
   const data = await resend.emails.send({
     from: "donnotreply <noreply@sociootc.com>",
     to: [email],
-    subject: "Merchant Has Accepted Your Trade Request- Action Required",
+    subject: "Support Issue Created - " + issueNumber,
     react: EmailTemplate({
-      firstName: email,
-      tradeId: id,
-      tradeAmount: amount,
-      tradeCurrency: Coins,
-      tradeStatus: status,
-      merchantName: UserName,
+      firstName: name,
+      issueNumber,
+      issueType,
+      theme,
+
     }),
   });
 
@@ -71,7 +69,7 @@ export async function sendverificationmail(email: string, code: string) {
   const data = await resend.emails.send({
     from: "Verification Mail <noreply@sociootc.com>",
     to: [email],
-    subject: "Your verification has arrived",
+    subject: "Your verification Code has arrived",
     react: VerificationEmail({ firstName: email, code }),
   });
 
@@ -101,6 +99,12 @@ export async function sendtradeupdate(
 
   return { success: true, message: "email sent successfully" };
 }
+//
+export async function sendPasswordChangedMail(
+  email: string,
+){
+
+};
 
 export async function getUserByEmail(email: string) {
   const user = await prisma.user.findUnique({
@@ -227,8 +231,10 @@ export async function updateUserProfilePic(email: string, Value: string) {
 
 export async function updatewallet(
   email: string,
-  address: string,
-  coin: string
+  accountName: string,
+  accountNumber: string,
+  bankName: string,
+  bankCode: string,
 ) {
   ///get the user info like email, username, and id
   const user = await prisma.user.findUnique({
@@ -241,269 +247,30 @@ export async function updatewallet(
   }
   const userid = user.id;
 
-  //check if a row has been created with the user id or email or username
-  const check = await prisma.userWallet.count({
-    where: {
-      userid,
-    },
-  });
-
-  if (check) {
-    if (coin === "atok") {
-      const send = await prisma.userWallet.update({
-        where: {
-          userid,
-        },
-        data: {
-          walletAddress: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the atok wallet address",
-        };
-      }
-      return { success: true, message: "atok wallet updated successfully" };
-    } else if (coin === "wow") {
-      const send = await prisma.userWallet.update({
-        where: {
-          userid,
-        },
-        data: {
-          walletAddress2: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the wow wallet address",
-        };
-      }
-      return { success: true, message: "WOW wallet updated successfully" };
-    } else if (coin === "sda") {
-      const send = await prisma.userWallet.update({
-        where: {
-          userid,
-        },
-        data: {
-          walletAddress3: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Sidra wallet address",
-        };
-      }
-      return { success: true, message: "Sidra wallet updated successfully" };
-    } else if (coin === "rbl") {
-      const send = await prisma.userWallet.update({
-        where: {
-          userid,
-        },
-        data: {
-          walletAddress4: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Ruby wallet address",
-        };
-      }
-      return { success: true, message: "Ruby wallet updated successfully" };
-    } else if (coin === "opincur") {
-      const send = await prisma.userWallet.update({
-        where: {
-          userid,
-        },
-        data: {
-          walletAddress5: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Opincur wallet address",
-        };
-      }
-      return { success: true, message: "Opincur wallet updated successfully" };
-    } else if (coin === "star") {
-      const send = await prisma.userWallet.update({
-        where: {
-          userid,
-        },
-        data: {
-          walletAddress6: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Star wallet address",
-        };
-      }
-      return { success: true, message: "Star wallet updated successfully" };
-    } else if (coin === "socio") {
-      const send = await prisma.userWallet.update({
-        where: {
-          userid,
-        },
-        data: {
-          walletAddress7: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Socio wallet address",
-        };
-      }
-      return { success: true, message: "Socio wallet updated successfully" };
+  const acc = await prisma.accountDetails.findUnique({
+    where: { userid }
+  })
+  if(!acc){
+    const createAcc = await prisma.accountDetails.create({
+      data: {
+      accountName,
+      bankName,
+      accountNumber,
+      bankCode,
+      userid
     }
-  } else {
-    //if not then create a new a row for the user with the following wallets details
-    if (coin === "atok") {
-      const send = await prisma.userWallet.create({
-        data: {
-          userid,
-          walletAddress: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the atok wallet address",
-        };
-      }
-      return { success: true, message: "atok wallet updated successfully" };
-    } else if (coin === "wow") {
-      const send = await prisma.userWallet.create({
-        data: {
-          userid,
-          walletAddress2: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the wow wallet address",
-        };
-      }
-      return { success: true, message: "WOW wallet updated successfully" };
-    } else if (coin === "sda") {
-      const send = await prisma.userWallet.create({
-        data: {
-          userid,
-          walletAddress3: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Sidra wallet address",
-        };
-      }
-      return { success: true, message: "Sidra wallet updated successfully" };
-    } else if (coin === "rbl") {
-      const send = await prisma.userWallet.create({
-        data: {
-          userid,
-          walletAddress4: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Ruby wallet address",
-        };
-      }
-      return { success: true, message: "Ruby wallet updated successfully" };
-    } else if (coin === "opincur") {
-      const send = await prisma.userWallet.create({
-        data: {
-          userid,
-          walletAddress5: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Opincur wallet address",
-        };
-      }
-      return { success: true, message: "Opincur wallet updated successfully" };
-    } else if (coin === "star") {
-      const send = await prisma.userWallet.create({
-        data: {
-          userid,
-          walletAddress6: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Star wallet address",
-        };
-      }
-      return { success: true, message: "Star wallet updated successfully" };
-    } else if (coin === "socio") {
-      const send = await prisma.userWallet.create({
-        data: {
-          userid,
-          walletAddress7: address,
-        },
-      });
-      if (!send) {
-        return {
-          success: false,
-          message: "unable able to the Socio wallet address",
-        };
-      }
-      return { success: true, message: "Socio wallet updated successfully" };
+    })
+
+    if(!createAcc){
+      return {success: false, message: "Failed to store bank account details"}
+    }
+    return {
+      success: true,
+      message: "account details store successfully"
     }
   }
 }
 
-export async function checkwallet(
-  email: string,
-  address: string,
-  coin: string
-) {
-  ///get the user info like email, username, and id
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true },
-  });
-
-  if (!user) {
-    return { success: false, message: "error fetching user details" };
-  }
-  const userid = user.id;
-
-  //check if a row has been created with the user id or email or username
-  const check = await prisma.userWallet.count({
-    where: {
-      userid,
-    },
-  });
-
-  if (check) {
-    const send = await prisma.userWallet.findUnique({
-      where: {
-        userid,
-      },
-    });
-    if (!send) {
-      return {
-        success: false,
-        message: "unable able to the atok wallet address",
-      };
-    }
-    return { success: true, message: send };
-  }
-}
 
 export async function SubmitKyc(
   email: string,
@@ -874,375 +641,6 @@ export async function getundeliveredNotifications(email: string) {
   }
 }
 
-export async function createads(
-  email: string,
-  coin: string,
-  price: string,
-  minQty: number,
-  maxQty: number,
-  proof: string,
-  type: string
-) {
-  try {
-    // Fetch the user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, userName: true, kycverified: true }, // Select only the user ID
-    });
-    if (!user) {
-      return { success: false, message: "User not found" };
-    }
-    if (!user.kycverified) {
-      return {
-        success: false,
-        message: "you must verify you kyc before you create an ad",
-      };
-    }
-    const userId = user.id; // Get the user ID
-    const username = user.userName; // Get the username
-
-    if (minQty > maxQty) {
-      return {
-        success: false,
-        message: "Minimum quantity cannot be greater than maximum quantity",
-      };
-    }
-
-    if ((type = "sell")) {
-      // Check if the user has a wallet balance before creating an ad
-
-      const checkwalletbalance = await prisma.wallets.findUnique({
-        where: { userId },
-      });
-      if (!checkwalletbalance) {
-        return {
-          success: false,
-          message: "You must create a wallet before creating an ad",
-        };
-      }
-      const getwalletbalance = await getBalance(checkwalletbalance.address);
-      if (!getwalletbalance) {
-        return { success: false, message: "Unable to get wallet balance" };
-      }
-      const against = Number(price) * maxQty;
-      if (Number(getwalletbalance.message) < against) {
-        return {
-          success: false,
-          message: `You don't have enough balance to create this ad. Your balance is ${getwalletbalance} ${coin}`,
-        };
-      }
-    }
-    const wallet = await prisma.userWallet.findUnique({
-      where: { userid: user.id },
-    });
-
-    if (!wallet) {
-      return {
-        success: false,
-        message: `Empty wallet address update your wallet address for ${coin}`,
-      };
-    }
-    let walletAddress;
-    if (coin === "atok") {
-      walletAddress = wallet?.walletAddress; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "wow") {
-      walletAddress = wallet?.walletAddress2; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "sidra") {
-      walletAddress = wallet?.walletAddress3; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "ruby") {
-      walletAddress = wallet?.walletAddress4; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "Opincur") {
-      walletAddress = wallet?.walletAddress5; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "star") {
-      walletAddress = wallet?.walletAddress6; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "socio") {
-      walletAddress = wallet?.walletAddress7; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    }
-
-    const existingAds = await prisma.ads.findMany({
-      where: { userId },
-    });
-
-    const sameTypeAd = existingAds.find((ad) => ad.type === type);
-    const sameCoinAd = existingAds.find((ad) => ad.coin === coin);
-
-    if (sameTypeAd && sameCoinAd) {
-      return {
-        success: false,
-        message: `You have already created a ${type} ad. Go to 'View Ads' to edit your ad details.`,
-      };
-    }
-
-    // Create a new ad in the database
-    const ads = await prisma.ads.create({
-      data: {
-        coin,
-        price,
-        minQty,
-        maxQty,
-        proof,
-        status: "inactive",
-        userId,
-        userName: username || "", // Include the username in the ad data
-        type,
-      },
-    });
-    if (!ads) {
-      return { success: false, message: ads };
-    }
-    return { success: true, message: "Ad created successfully" };
-  } catch (error) {
-    console.log("Error creating ad:", error);
-    return { success: false, message: "Failed to create ad" };
-  }
-}
-export async function deletead(id: string) {
-  try {
-    // Fetch ads for the user
-    const ads = await prisma.ads.delete({
-      where: { id },
-    });
-
-    return { success: true, ads };
-  } catch (error) {
-    console.error("Error fetching ads:", error);
-    return { success: false, message: "Failed to fetch ads" };
-  }
-}
-
-export async function getAllAds() {
-  try {
-    // Fetch all ads
-    const ads = await prisma.ads.findMany({
-      orderBy: { createdAt: "desc" }, // Sort by creation date (latest first)
-    });
-
-    if (!ads) {
-      return { success: false, message: "No ads found" };
-    }
-
-    return { success: true, ads };
-  } catch (error) {
-    console.error("Error fetching ads:", error);
-    return { success: false, message: "Failed to fetch ads" };
-  }
-}
-
-export async function getUserads(email: string) {
-  try {
-    //fetch user id using email
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
-    const userId = user?.id;
-    // Fetch all ads
-    const ads = await prisma.ads.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" }, // Sort by creation date (latest first)
-    });
-
-    if (!ads) {
-      return { success: false, message: "No ads found" };
-    }
-
-    return { success: true, ads };
-  } catch (error) {
-    console.error("Error fetching ads:", error);
-    return { success: false, message: "Failed to fetch ads" };
-  }
-}
-
-export async function addtraderequest(
-  email: string,
-  userName: string,
-  adId: string,
-  amount: number,
-  price: number,
-  coin: string,
-  type: string
-) {
-  try {
-    console.log("Adding trade request:", {
-      email,
-      userName,
-      adId,
-      amount,
-      price,
-      coin,
-    });
-    // Fetch the user by email
-    const merchant = await prisma.user.findUnique({
-      where: { userName },
-      select: { id: true, userName: true, email:true }, // Select only the user ID
-    });
-    if (!merchant) {
-      return { success: false, message: "User not found" };
-    }
-    const merchantId = merchant.id; // Get the user ID
-    const username = merchant.userName; // Get the username
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true }, // Select only the user ID
-    });
-    if (!user) {
-      return { success: false, message: "User not found" };
-    }
-    let wallet;
-    if (type === "buy") {
-      wallet = await prisma.userWallet.findUnique({
-        where: { userid: user.id },
-      });
-    } else {
-      wallet = await prisma.userWallet.findUnique({
-        where: { userid: merchant.id },
-      });
-    }
-
-    if (!wallet) {
-      return {
-        success: false,
-        message: `Empty wallet address update your wallet address for ${coin}`,
-      };
-    }
-
-    let walletAddress;
-    if (coin === "atok") {
-      walletAddress = wallet?.walletAddress; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "wow") {
-      walletAddress = wallet?.walletAddress2; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "sidra") {
-      walletAddress = wallet?.walletAddress3; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "ruby") {
-      walletAddress = wallet?.walletAddress4; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "Opincur") {
-      walletAddress = wallet?.walletAddress5; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "star") {
-      walletAddress = wallet?.walletAddress6; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    } else if (coin === "socio") {
-      walletAddress = wallet?.walletAddress7; // Get the user's wallet address
-      if (walletAddress === null) {
-        return {
-          success: false,
-          message: `Update your ${coin} wallet address`,
-        };
-      }
-    }
-
-    const userId = user.id; // Get the user ID
-    // Create a new ad in the database
-    const priceNo = price.toString().replace(/,/g, "");
-    const amountNo = amount.toString().replace(/,/g, "");
-    const traderequest = await prisma.traderequest.create({
-      data: {
-        adId,
-        coin,
-        price: priceNo,
-        status: "pending",
-        type,
-        amount: amountNo,
-        userId,
-        merchantId,
-        walletAddress, // Include the wallet address in the ad data
-        merchantName: username || "", // Include the username in the ad data
-      },
-    });
-
-    if (!traderequest) {
-      return { success: false, message: "failed to upload" };
-    }
-
-    const usersname = await prisma.user.findUnique({
-      where:{email}
-    })
-
-    await addNotification(merchant.email, "Trade Request", `you have a new trade request from ${usersname?.userName}`);
-    return { success: true, message: "Trade request created successfully" };
-  } catch (error) {
-    console.log("Error creating trade request:", error);
-    return { success: false, message: "Failed to create trade request" };
-  }
-}
-
 export async function gettraderequests(email: string) {
   try {
     // Fetch the user by email
@@ -1287,164 +685,6 @@ export async function gettraderequestsinfo(id: string) {
   }
 }
 
-export async function acceptTrade(id: string) {
-  try {
-    // Fetch the user by email
-    const traderequest = await prisma.traderequest.findUnique({
-      where: { id },
-    });
-    if (!traderequest) {
-      return { success: false, message: "Trade request not found" };
-    }
-    const traderequestId = traderequest.id; // Get the user ID
-    const adId = traderequest.adId; // Get the user ID
-    const amount = traderequest.amount; // Get the user ID
-    const price = traderequest.price; // Get the user ID
-    const coin = traderequest.coin; // Get the user ID
-    const status = traderequest.status; // Get the user ID
-    const walletAddress = traderequest.walletAddress;
-    const type = traderequest.type;
-
-    if (status === "Accepted") {
-      return { success: false, message: "Trade request already Accepted" };
-    }
-
-    // Update the user's field in the database
-    const updaterequest = await prisma.traderequest.update({
-      where: { id },
-      data: { status: "Accepted" },
-    });
-
-    if (!updaterequest) {
-      return { success: false, message: "unable to update trade request" };
-    }
-
-    // Create a new ad in the database
-    const addTransaction = await prisma.adsTransaction.create({
-      data: {
-        adId: adId,
-        orderId: traderequestId,
-        coin,
-        type,
-        price,
-        status: "pending",
-        amount,
-        userId: traderequest.userId,
-        merchantconfirm: "pending",
-        customerconfirm: "pending",
-        merchantID: traderequest.merchantId,
-        walletAddress,
-        userName: traderequest.merchantName || "", // the username is the merchant username
-        receipt: "",
-      },
-    });
-
-    if (!addTransaction) {
-      return { success: false, message: "" };
-    }
-    const user = await prisma.user.findUnique({
-      where: { id: traderequest.userId },
-      select: { email: true },
-    });
-    if (!user) {
-      return {
-        success: true,
-        message:
-          "Trade request accepted successfully, but unable to get the user email",
-      };
-    }
-    const mail = await sendtradeRequestmails(
-      user.email,
-      traderequestId,
-      amount,
-      coin,
-      traderequest.status,
-      traderequest.merchantName
-    );
-
-    if (!mail) {
-      return {
-        success: true,
-        message:
-          "Trade request accepted successfully, but unable to send user email",
-      };
-    }
-    await addNotification(user.email, "Trade Request Accepted", `your Trade request from the merchant ${traderequest.merchantName} has been Accepted`);
-    return { success: true, message: `Trade request accepted successfully` };
-  } catch (error) {
-    console.error(`Error accepting trade request ${id}:`, error);
-    return {
-      success: false,
-      message: `An error occurred while accepting trade request`,
-    };
-  }
-}
-
-export async function Canceltrade(id: string) {
-  try {
-    // Fetch the user by email
-    const traderequest = await prisma.traderequest.findUnique({
-      where: { id },
-    });
-    if (!traderequest) {
-      return { success: false, message: "Trade request not found" };
-    }
-    const traderequestId = traderequest.id; // Get the user ID
-    const amount = traderequest.amount; // Get the user ID
-    const coin = traderequest.coin; // Get the user ID
-    const status = traderequest.status; // Get the user ID
-
-    if (status === "Cancelled") {
-      return { success: false, message: "Trade  already Cancelled" };
-    }
-
-    // Update the user's field in the database
-    const updaterequest = await prisma.traderequest.update({
-      where: { id },
-      data: { status: "Cancelled" },
-    });
-
-    if (!updaterequest) {
-      return { success: false, message: "unable to update trade request" };
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: traderequest.userId },
-      select: { email: true },
-    });
-    if (!user) {
-      return {
-        success: true,
-        message:
-          "Trade Cancelled successfully, but unable to get the user email",
-      };
-    }
-    const mail = await sendtradeCancelledmails(
-      user.email,
-      traderequestId,
-      amount,
-      coin,
-      traderequest.status,
-      traderequest.merchantName
-    );
-
-    if (!mail) {
-      return {
-        success: true,
-        message:
-          "Trade Cancelled successfully, but unable to send user email",
-      };
-    }
-    await addNotification(user.email, "Trade Request", `you have a new trade request from to the ${traderequest.merchantName}, Has been cancelled`);
-    return { success: true, message: `Trade Cancelled successfully` };
-  } catch (error) {
-    console.error(`Error accepting trade request ${id}:`, error);
-    return {
-      success: false,
-      message: `An error occurred while accepting trade request`,
-    };
-  }
-}
 
 export async function getadstransactions(ids: string) {
   try {
@@ -1684,6 +924,9 @@ export async function sendcode(email: string) {
       console.log(user);
       return { success: false, message: "unable to get user" };
     }
+    if(user.emailVerified){
+      return{ success: false, message: "email has already been verified"}
+    }
     const getCode = generateVerificationCode();
     if (!getCode) {
       console.log(getCode);
@@ -1738,7 +981,6 @@ export async function checkcode(email: string, vcode: string) {
   if (now.getTime() > expires.getTime() + fiveMinutes) {
     return { success: false, message: "Your verification code has expired" };
   }
-  if (!user.emailVerified) {
     const updateverification = await prisma.user.update({
       where: { email },
       data: { emailVerified: true, emailVerifiedAt: now },
@@ -1749,8 +991,6 @@ export async function checkcode(email: string, vcode: string) {
         message: "unable to verify email please try again later",
       };
     }
-    return { success: true, message: "Email verified successfully" };
-  }
 
   await prisma.verificationToken.delete({
     where: { email },

@@ -403,3 +403,27 @@ Anyone could guess transaction references.
 
 For MVP it's okay.
 For production → use private channels.
+
+
+to do later i want to add or collect the info for users to set their country, address, date of birth, nationality, city, state, postalCode
+
+
+Keep on profile page
+
+profile image
+username
+full name
+phone number
+country
+date of birth
+residential address
+referral code
+referral link
+
+Move off this page
+
+email verification → security page
+password change → security page
+2FA → security page
+KYC document upload/status → KYC page
+bank accounts / wallets → payment methods or wallets page

@@ -25,31 +25,52 @@ export default function MarketPlaceComponent({
   const [selectedCoin, setSelectedCoin] = useState<(typeof coins)[0] | null>(
     null,
   );
-  const [ngnAmount, setNgnAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [reference, setRefe] = useState<string>("");
   const [paymentStatus, setPaymentStatus] = useState<string>("pending");
   const [txHash, setTxHash] = useState<string>("");
+  const [inputMode, setInputMode] = useState<"fiat" | "crypto">("fiat");
+  const [amount, setAmount] = useState("");
+
+  const coinPrice = selectedCoin
+    ? parseFloat(selectedCoin.price.replace(/[$,]/g, ""))
+    : 0;
+
+  // if user enters fiat (NGN)
+  const usdFromFiat =
+    inputMode === "fiat" && selectedCoin && amount
+      ? parseFloat(amount) / selectedCoin.rate
+      : 0;
+
+  const cryptoFromFiat =
+    inputMode === "fiat" && usdFromFiat && coinPrice
+      ? usdFromFiat / coinPrice
+      : 0;
+
+  // if user enters crypto
+  const usdFromCrypto =
+    inputMode === "crypto" && amount && coinPrice
+      ? parseFloat(amount) * coinPrice
+      : 0;
+
+  const ngnFromCrypto =
+    inputMode === "crypto" && usdFromCrypto && selectedCoin
+      ? usdFromCrypto * selectedCoin.rate
+      : 0;
+
+  // unified display values
+  const finalUsdValue = inputMode === "fiat" ? usdFromFiat : usdFromCrypto;
+
+  const finalCryptoValue =
+    inputMode === "fiat" ? cryptoFromFiat : parseFloat(amount || "0");
+
+  const finalNgnValue =
+    inputMode === "fiat" ? parseFloat(amount || "0") : ngnFromCrypto;
   const popupRef = useRef<PaystackPop | null>(null);
 
-
-useEffect(() => {
-  popupRef.current = new PaystackPop();
-}, []);
-
-  // Calculate USD value from NGN input and coin rate
-  const usdValue =
-    selectedCoin && ngnAmount
-      ? (parseFloat(ngnAmount) / selectedCoin.rate).toFixed(4)
-      : "";
-
-  //calculate the crypto to recieve based on usd value and the current price of the crypto
-  const cryptoToReceive = selectedCoin
-    ? (
-        parseFloat(usdValue) /
-        parseFloat(selectedCoin.price.replace(/[$,]/g, ""))
-      ).toFixed(4)
-    : "";
+  useEffect(() => {
+    popupRef.current = new PaystackPop();
+  }, []);
 
   //get the usd price for each crpyto
 
@@ -86,7 +107,32 @@ useEffect(() => {
       channel.unsubscribe();
     };
   }, [reference]);
-  const Buy = async () => {
+
+  const handleContinue = async () => {
+    if (!selectedCoin) {
+      toast.error("Please select a coin");
+      return;
+    }
+
+    if (!amount || Number(amount) <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (active === "buy") {
+      await handleBuy();
+      return;
+    }
+
+    if (active === "sell") {
+      await handleSell();
+      return;
+    }
+
+    toast.error("Please choose buy or sell");
+  };
+
+  const handleBuy = async () => {
     try {
       setLoading(true);
       const response = await fetch("api/buy/initialize", {
@@ -94,8 +140,10 @@ useEffect(() => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email,
-          nairaAmount: ngnAmount,
+          nairaAmount: finalNgnValue.toString(),
           cryptoType: selectedCoin?.symbol,
+          cryptoAmount: finalCryptoValue,
+          inputMode,
         }),
       });
 
@@ -104,7 +152,8 @@ useEffect(() => {
         toast.success(
           "Transaction initialized successfully. Please proceed to payment.",
         );
-        popupRef.current?.resumeTransaction(data.accesscode);        setRefe(data.paymentReference);
+        popupRef.current?.resumeTransaction(data.accesscode);
+        setRefe(data.paymentReference);
         setLoading(false);
       } else {
         const errorText = await response.text();
@@ -121,6 +170,90 @@ useEffect(() => {
         "An error occurred while processing your request. Please try again.",
         error,
       );
+    }
+  };
+
+  const handleSell = async () => {
+    try {
+      setLoading(true);
+
+      const initResponse = await fetch("/api/sell/initialize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          cryptoType: selectedCoin?.symbol,
+          cryptoAmount: finalCryptoValue.toFixed(6),
+          nairaAmount: finalNgnValue.toString(),
+          usdAmount: finalUsdValue,
+          inputMode,
+        }),
+      });
+
+      const initData = await initResponse.json();
+
+      if (!initResponse.ok) {
+        toast.error(initData.message || "Failed to initialize sell transaction");
+        setLoading(false);
+        return;
+      }
+
+      setRefe(initData.reference);
+      setPaymentStatus(initData.status || "awaiting-crypto");
+
+
+
+      
+      const executeResponse = await fetch("/api/sell/execute", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          PlatformReference: initData.reference,
+        }),
+      });
+
+      const executeData = await executeResponse.json();
+
+      if (!executeResponse.ok) {
+        toast.error(executeData.message || "Failed to initialize sell transaction");
+        setLoading(false);
+        return;
+      }
+      toast.success(initData.message || "testing for return message")
+
+
+      const payoutResponse = await fetch("/api/sell/payout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          PlatformReference: initData.reference,
+          amountInNaira: finalNgnValue,
+        }),
+      });
+
+      const payoutData = await payoutResponse.json();
+
+      if (!payoutResponse.ok) {
+        toast.error(payoutData.message || "Failed to initialize sell transaction");
+        setLoading(false);
+        return;
+      }
+
+
+      
+      toast.success(payoutData.message || "Sell transaction initialized");
+    } catch (error) {
+      console.error("Sell initialization error:", error);
+      toast.error("An error occurred while initializing sell transaction");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -199,41 +332,85 @@ useEffect(() => {
             {active === "buy" ? "Buy" : "Sell"} {selectedCoin.name}
           </h3>
           <div className="mb-6 flex flex-col gap-2">
-            <label className="text-lg font-medium" htmlFor="ngnAmount">
-              Enter Amount (NGN)
+            <div className="flex gap-4">
+              <div
+                onClick={() => setInputMode("fiat")}
+                className={
+                  inputMode === "fiat"
+                    ? "border border-gray-300 bg-blue-400 rounded px-4 py-2 cursor-pointer"
+                    : "border border-gray-300 rounded px-4 py-2 cursor-pointer"
+                }
+              >
+                Fiat
+              </div>
+
+              <div
+                onClick={() => setInputMode("crypto")}
+                className={
+                  inputMode === "crypto"
+                    ? "border border-gray-300 bg-blue-400 rounded px-4 py-2 cursor-pointer"
+                    : "border border-gray-300 rounded px-4 py-2 cursor-pointer"
+                }
+              >
+                Coin
+              </div>
+            </div>
+            <label className="text-lg font-medium" htmlFor="amount">
+              {inputMode === "fiat"
+                ? "Enter Amount (NGN)"
+                : `Enter Amount (${selectedCoin?.symbol})`}
             </label>
+
             <input
-              id="ngnAmount"
+              id="amount"
               type="number"
               min="0"
               className="border border-gray-300 rounded px-4 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Amount in NGN"
-              value={ngnAmount}
-              onChange={(e) => setNgnAmount(e.target.value)}
+              placeholder={
+                inputMode === "fiat"
+                  ? "Amount in NGN"
+                  : `Amount in ${selectedCoin?.symbol}`
+              }
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
             />
           </div>
           <div className="mb-4 text-lg">
-            {ngnAmount && (
+            {amount && (
               <>
                 <span className="font-semibold">USD Value: </span>
                 <span className="text-blue-600">
-                  ${usdValue}{" "}
+                  ${finalUsdValue.toFixed(4)}{" "}
                   <span className="text-gray-500 text-base">
-                    (@ ₦{selectedCoin.rate}/$)
+                    (@ ₦{selectedCoin?.rate}/$)
                   </span>
                 </span>
               </>
             )}
           </div>
+
           <div className="mb-4 text-lg">
-            {ngnAmount && selectedCoin && (
+            {amount && selectedCoin && (
               <>
-                <span className="font-semibold">To recieve: </span>
+                <span className="font-semibold">
+                  {active === "buy" ? "To receive: " : "To send: "}
+                </span>
                 <span className="text-blue-600">
-                  {cryptoToReceive}{" "}
+                  {finalCryptoValue.toFixed(6)}{" "}
                   <span className="text-gray-500 text-base">
                     {selectedCoin.symbol}
                   </span>
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="mb-4 text-lg">
+            {amount && selectedCoin && inputMode === "crypto" && (
+              <>
+                <span className="font-semibold">NGN Equivalent: </span>
+                <span className="text-blue-600">
+                  ₦{finalNgnValue.toFixed(2)}
                 </span>
               </>
             )}
@@ -243,32 +420,34 @@ useEffect(() => {
               className="px-6 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
               onClick={() => {
                 setSelectedCoin(null);
-                setNgnAmount("");
+                setAmount("");
               }}
             >
               &larr; Back
             </Button>
             <Button
               className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold"
-              disabled={!ngnAmount || parseFloat(ngnAmount) <= 0 || loading}
-              onClick={Buy}
+              disabled={!amount || loading}
+              onClick={handleContinue}
             >
-              Continue
+              {loading ? "Processing..." : "Continue"}
             </Button>
           </div>
         </div>
       )}
-      {selectedCoin && (
+
+      {selectedCoin && reference && (
         <div className="w-full max-w-md mt-6">
           <Card>
             <CardContent className="py-6 px-6 space-y-4">
               <h4 className="text-lg font-semibold">Transaction Status</h4>
-              
+
               {paymentStatus === "pending" && (
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" />
                   <span className="text-yellow-600 font-medium">
-                    Pending Payment. Please complete the payment in the pop-up window that appears after clicking "Continue".
+                    Pending Payment. Please complete the payment in the pop-up
+                    window that appears after clicking "Continue".
                   </span>
                 </div>
               )}

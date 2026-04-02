@@ -239,3 +239,67 @@ export async function percentagechangetrade() {
   };
   ////////////////////////////////////////////////////////
 }
+
+export async function getAdminEthWallet(
+){
+  try {
+  const admin = await prisma.user.findFirst({
+    where: {roles: "admin"},
+    include: { wallet: true }
+  })
+  if(!admin){
+    return{
+      success: false,
+      message: "unable to get admin details"
+    }
+  }
+  if(admin.roles != "admin"){
+    return {
+      success: false,
+      message: "the fetched details is not an admin"
+    }
+  }
+  if (!admin.wallet) {
+  return {
+    success: false,
+    message: "Admin wallet not found"
+  }
+}
+  return {success: true, walletaddress: admin.wallet[0].address};
+    } catch (error) {
+    console.error("Error fetching admin wallet:", error);
+    return {
+      success: false,
+      message: "Server error while fetching admin wallet",
+    };
+  }
+}
+
+export async function getAdminWalletByCoin(
+  coin: string,
+){
+  if(!coin){
+    return{success: false, message:"please enter a coin type"}
+  }
+  switch(coin){
+    case "eth":
+      const response = await getAdminEthWallet();
+      return{
+        success: true,
+        walletAddress: response.walletaddress,
+      }
+    case "bnb":
+      const bnbresponse = await getAdminEthWallet();
+      return{
+        success: true,
+        walletAddress: bnbresponse.walletaddress,
+      }
+      default:
+        const defaultresponse = await getAdminEthWallet();
+        return{
+          success: true,
+          walletAddress: defaultresponse.walletaddress,
+        }
+
+  }
+}

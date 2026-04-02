@@ -1,0 +1,5 @@
+JBC Notes {"id":2,"country":"NG","timezone":"Africa/Lagos","manual_timezone":null,"email":"kj374624@gmail.com","sms":null,"telegram":null,"telegram_username":null,"google_email":"kj374624@gmail.com","notify_email":true,"notify_sms":false,"notify_telegram":false,"availability":null,"email_verified":false,"status":"ACTIVE","bot_status":"ACTIVE","member_rights":null}
+
+
+
+I was working on update members information when I discovered that users having a wallet address linked is very important because to update a user info email must be verified and to verify email user must have a wallet address linked

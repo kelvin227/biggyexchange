@@ -1,21 +1,10 @@
 "use client";
-import { useEffect } from "react";
-
-export default function GlobalLoader({ isLoading }: { isLoading: boolean }) {
-  useEffect(() => {
-    if (isLoading) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-  }, [isLoading]);
-
-  if (!isLoading) return null;
+export default function GlobalLoader() {
 
   return (
     <div className="loader-overlay">
       <svg viewBox="0 0 200 200" width="120" height="120">
-        <g id="arrows">
+        <g className="arrows">
           <path
             d="M100 20 A80 80 0 0 1 180 100"
             fill="none"
@@ -51,29 +40,28 @@ export default function GlobalLoader({ isLoading }: { isLoading: boolean }) {
         .loader-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(255, 255, 255, 0.85);
+          background: rgba(255, 255, 255, 0.9);
           display: flex;
-          justify-content: center;
           align-items: center;
+          justify-content: center;
           z-index: 9999;
-          backdrop-filter: blur(4px);
+          pointer-events: all;
         }
 
-        #arrows {
+        .arrows {
           transform-box: fill-box;
           transform-origin: center;
-          animation: spin 1.6s cubic-bezier(.4,0,.2,1) infinite;
+          animation: spin 1.4s linear infinite;
         }
 
         @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
-
-        text {
-            filter: drop-shadow(0 0 6px rgba(244,180,0,0.6));
-        }
-      
       `}</style>
     </div>
   );

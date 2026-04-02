@@ -7,6 +7,7 @@ import * as bip39 from "bip39";
 import { Keypair, Connection, PublicKey, Transaction, SystemProgram, clusterApiUrl  } from "@solana/web3.js";
 import { derivePath } from "ed25519-hd-key";
 import bcrypt from "bcryptjs";
+import { ChainType } from "@/components/models";
 /* eslint-disable */
 
 const adminWallet = "0xd8c8223d43F6AD2af6D5c6399C6Fc63aF42253B6";
@@ -744,17 +745,99 @@ export async function getBnbPrice() {
     return { success: false, message: error };
   }
 }
-export async function gettransaction(address: string) {
+export async function getTransactions({
+  address,
+  chain,
+}: {
+  address: string;
+  chain: ChainType;
+}) {
   try {
-    const responses = await fetch(
-      `https://api.etherscan.io/v2/api?chainid=1&module=account&action=tokentx&contractaddress=0xdAC17F958D2ee523a2206206994597C13D831ec7&address=${address}&page=0&offset=5&startblock=0&endblock=999999999&sort=desc&apikey=${process.env.ETHER_API_KEY}`
-    );
+    switch (chain) {
+      case "eth":
+        console.log(address);
+        console.log(await fetchETH(address));
+        return fetchETH(address);
 
-    return responses.json();
+      case "usdt_erc20":
+        console.log(fetchERC20(address));
+        return fetchERC20(address);
+
+      case "bnb":
+        console.log(fetchBNB(address));
+        return fetchBNB(address);
+
+      case "usdt_bep20":
+        console.log(fetchBEP20(address));
+        return fetchBEP20(address);
+
+      case "sol":
+        console.log(fetchSOL(address));
+        return fetchSOL(address);
+
+      default:
+        throw new Error("Unsupported chain");
+    }
   } catch (error) {
-    console.error("Error fetching transaction data:", error);
+    console.error("Transaction fetch error:", error);
+    return null;
   }
 }
+
+const fetchETH = async (address: string) => {
+  const res = await fetch(
+    `https://api.etherscan.io/v2/api?apikey=${process.env.ETHER_API_KEY}&chainid=1&module=account&action=txlist&address=${address}&startblock=1&endblock=99999999999&sort=desc`
+  );
+
+  return res.json();
+};
+
+const fetchERC20 = async (address: string) => {
+  const USDT_CONTRACT =
+    "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+
+  const res = await fetch(
+    `https://api.etherscan.io/api?module=account&action=tokentx&contractaddress=${USDT_CONTRACT}&address=${address}&sort=desc&apikey=${process.env.ETHER_API_KEY}`
+  );
+
+  return res.json();
+};
+
+const fetchBEP20 = async (address: string) => {
+  const USDT_BEP20 =
+    "0x55d398326f99059fF775485246999027B3197955";
+
+  const res = await fetch(
+    `https://api.bscscan.com/api?module=account&action=tokentx&contractaddress=${USDT_BEP20}&address=${address}&sort=desc&apikey=${process.env.BSCSCAN_API_KEY}`
+  );
+
+  return res.json();
+};
+
+const fetchBNB = async (address: string) => {
+  const res = await fetch(
+    `https://api.bscscan.com/api?module=account&action=txlist&address=${address}&sort=desc&apikey=${process.env.BSCSCAN_API_KEY}`
+  );
+
+  return res.json();
+};
+
+const fetchSOL = async (address: string) => {
+  const res = await fetch("https://api.mainnet-beta.solana.com", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getSignaturesForAddress",
+      params: [address, { limit: 10 }],
+    }),
+  });
+
+  return res.json();
+};
 
 export async function sendusdt(
   amount: string,

@@ -2,5 +2,5 @@
 import GlobalLoader from "@/components/Loader";
 
 export default function Loading() {
-  return <GlobalLoader isLoading={true} />;
+  return <GlobalLoader/>;
 }
